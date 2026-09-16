@@ -1,0 +1,56 @@
+name: Docker Image
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'requirements.txt'
+      - 'app.py'
+      - 'templates/**'
+      - 'static/**'
+      - '.github/workflows/docker-image.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'requirements.txt'
+      - 'app.py'
+      - 'templates/**'
+      - 'static/**'
+      - '.github/workflows/docker-image.yml'
+
+jobs:
+  build:
+    name: Build and measure image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --tag ntp-dashboard:ci .
+
+      - name: Report image size
+        run: |
+          docker image inspect ntp-dashboard:ci \
+            --format='Uncompressed image size: {{.Size}} bytes ({{printf "%.2f" (div .Size 1048576.0)}} MiB)'
+          echo
+          echo 'Layer history:'
+          docker history ntp-dashboard:ci
+
+      - name: Smoke test container
+        run: |
+          docker run --detach --name ntp-dashboard-ci --network host ntp-dashboard:ci
+          trap 'docker logs ntp-dashboard-ci || true; docker rm -f ntp-dashboard-ci || true' EXIT
+          for i in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:55234/ >/dev/null; then
+              echo 'Container smoke test passed'
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'Container did not become ready'
+          exit 1
