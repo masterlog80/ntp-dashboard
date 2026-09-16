@@ -28,18 +28,19 @@ WORKDIR /app
 
 ARG INSTALL_GPSD_CLIENTS=false
 
-# Runtime-only packages. Build tools and development headers stay in the
-# builder stage, substantially reducing the final image footprint.
+# Runtime-only packages. Keep package versions aligned with the Alpine 3.23
+# repositories used by the pinned Python base image. Avoid apk upgrade here:
+# mixing a full upgrade with pinned packages can make builds fail when the
+# repository moves to a newer security revision.
 RUN set -eux; \
-    apk upgrade --no-cache; \
     apk add --no-cache \
         chrony \
-        gnutls=3.8.13-r0 \
-        p11-kit=0.26.2-r0 \
-        expat=2.8.2-r0 \
+        gnutls \
+        p11-kit \
+        expat \
         libffi \
-        libcrypto3=3.5.7-r0 \
-        libssl3=3.5.7-r0; \
+        libcrypto3 \
+        libssl3; \
     if [ "$INSTALL_GPSD_CLIENTS" = "true" ]; then \
         apk add --no-cache gpsd-clients; \
     fi
