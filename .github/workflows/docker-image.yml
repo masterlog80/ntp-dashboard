@@ -35,8 +35,9 @@ jobs:
 
       - name: Report image size
         run: |
-          docker image inspect ntp-dashboard:ci \
-            --format='Uncompressed image size: {{.Size}} bytes ({{printf "%.2f" (div .Size 1048576.0)}} MiB)'
+          size=$(docker image inspect ntp-dashboard:ci --format='{{.Size}}')
+          mib=$(awk -v size="$size" 'BEGIN { printf "%.2f", size / 1048576 }')
+          echo "Uncompressed image size: ${size} bytes (${mib} MiB)"
           echo
           echo 'Layer history:'
           docker history ntp-dashboard:ci
