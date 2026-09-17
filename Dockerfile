@@ -53,6 +53,7 @@ COPY --from=builder /install /usr/local
 COPY app.py ./
 COPY server.py ./
 COPY run.py ./
+COPY sitecustomize.py ./
 COPY templates ./templates
 COPY static ./static
 COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
