@@ -38,7 +38,7 @@ html[data-color-mode="dark"] .app-header { background:rgba(28,36,49,.96); }
   html[data-color-mode="system"] { --ui-bg:#0d1117; --ui-bg2:#161b22; --ui-card:#1c2431; --ui-border:#30363d; --ui-text:#e6edf3; --ui-muted:#8b949e; --ui-green:#3fb950; --ui-red:#f85149; }
   html[data-color-mode="system"] .app-header { background:rgba(28,36,49,.96); }
 }
-#ntp-dashboard-theme-buttons button[aria-pressed="true"] { box-shadow:inset 0 0 0 1px #58a6ff,0 0 0 1px rgba(88,166,255,.15); border-color:#58a6ff; }
+#btn-light[aria-pressed="true"], #btn-system[aria-pressed="true"], #btn-dark[aria-pressed="true"] { box-shadow:inset 0 0 0 1px #58a6ff,0 0 0 1px rgba(88,166,255,.15); border-color:#58a6ff; }
 </style>
 """
                 script = """
