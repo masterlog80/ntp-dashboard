@@ -22,7 +22,7 @@ FROM python:3.13.14-alpine3.23
 
 WORKDIR /app
 
-ARG INSTALL_GPSD_CLIENTS=false
+ARG INSTALL_GPSD_CLIENTS=true
 ARG APP_VERSION=latest
 
 RUN set -eux; \
@@ -35,20 +35,13 @@ RUN set -eux; \
         libcrypto3 \
         libssl3; \
     if [ "$INSTALL_GPSD_CLIENTS" = "true" ]; then \
-        apk add --no-cache gpsd-clients; \
+        apk add --no-cache gpsd gpsd-clients; \
     fi
 
 COPY --from=builder /install /usr/local
 
-# Runtime metadata: keep the build-time image version available without
-# requiring Docker socket access or Kubernetes API access. The build workflow
-# can override APP_VERSION for versioned images; local/default images use
-# "latest", matching the normal Docker tag used for this image.
 RUN printf '%s\n' "$APP_VERSION" > /app/.version
 
-# Install the runtime hooks into Python's site-packages. The .pth file is
-# processed by Python before app.py is imported, so this works even when
-# Docker/Kubernetes explicitly starts `python app.py` and bypasses run.py.
 COPY ntp_dashboard_runtime.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_favicon.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_runtime.pth /usr/local/lib/python3.13/site-packages/
@@ -57,6 +50,7 @@ COPY app.py ./
 COPY server.py ./
 COPY run.py ./
 COPY sitecustomize.py ./
+COPY docker-entrypoint.sh ./
 COPY templates ./templates
 COPY static ./static
 COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
@@ -79,7 +73,9 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
 
 EXPOSE 55234
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:55234/', timeout=3)" || exit 1
+# Use Alpine's wget for the health probe so the check does not pay Python startup/import cost.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -q -O /dev/null http://127.0.0.1:55234/healthz || exit 1
 
+ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
 CMD ["python", "run.py"]

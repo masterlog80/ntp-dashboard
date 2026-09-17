@@ -175,6 +175,12 @@ def run_commands_remote(cmds, config, timeout_seconds=5):
         ssh.close()
     return results
 
+# --- Container health ---
+@app.route('/healthz')
+def healthz():
+    """Minimal Docker health endpoint; deliberately avoids external dependencies."""
+    return 'OK\\n', 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
 # --- PWA Routes ---
 @app.route('/manifest.json')
 def manifest():
