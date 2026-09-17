@@ -1,0 +1,43 @@
+name: Remove legacy release checker
+
+on:
+  push:
+    branches: [ui-refresh-remove-updater]
+    paths:
+      - 'app.py'
+      - 'templates/index.html'
+      - 'static/dashboard.js'
+      - '.github/workflows/cleanup-legacy-updater.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ui-refresh-remove-updater
+          fetch-depth: 0
+      - name: Remove legacy Docker Hub release checker
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('app.py')
+          text = path.read_text()
+
+          text = re.sub(r'\n# --- Docker Hub Update Check \(with caching\) ---.*?\n# --- Directory and File Paths ---', '\n# --- Directory and File Paths ---', text, flags=re.S)
+          text = re.sub(r'\n# --- API: Update Check \(Docker Hub\) ---.*?\n@app\.route\(\'/api/ntp\'\)', '\n@app.route(\'/api/ntp\')', text, flags=re.S)
+          text = text.replace('import threading\n', '').replace('import time\n', '').replace('import requests\n', '')
+          path.write_text(text)
+
+      - name: Commit cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.py
+          git diff --cached --quiet || git commit -m 'ui: remove legacy Docker Hub release checker [skip ci]'
+          git push origin HEAD:ui-refresh-remove-updater
