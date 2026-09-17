@@ -52,6 +52,7 @@ COPY --from=builder /install /usr/local
 
 COPY app.py ./
 COPY server.py ./
+COPY run.py ./
 COPY templates ./templates
 COPY static ./static
 COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
@@ -68,4 +69,4 @@ EXPOSE 55234
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:55234/', timeout=3)" || exit 1
 
-CMD ["python", "server.py"]
+CMD ["python", "run.py"]
