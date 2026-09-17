@@ -4,360 +4,241 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NTP Dashboard</title>
-    
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#58a6ff">
     <link rel="apple-touch-icon" href="/static/images/ntp-dashboard-logo.png">
-
     <script src="/static/tailwindcss.js"></script>
-    <script>
-        tailwind.config = { 
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    gridTemplateColumns: {
-                        '20': 'repeat(20, minmax(0, 1fr))',
-                    },
-                    gridColumn: {
-                        'span-9': 'span 9 / span 9',
-                        'span-5': 'span 5 / span 5',
-                        'span-6': 'span 6 / span 6',
-                    },
-                    colors: {
-                        primary: {
-                            50: 'rgb(var(--primary-50) / <alpha-value>)',
-                            100: 'rgb(var(--primary-100) / <alpha-value>)',
-                            200: 'rgb(var(--primary-200) / <alpha-value>)',
-                            400: 'rgb(var(--primary-400) / <alpha-value>)',
-                            500: 'rgb(var(--primary-500) / <alpha-value>)',
-                            600: 'rgb(var(--primary-600) / <alpha-value>)',
-                            800: 'rgb(var(--primary-800) / <alpha-value>)',
-                            900: 'rgb(var(--primary-900) / <alpha-value>)'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        /* 1. Default Blue */
         :root {
             --primary-50: 239 246 255; --primary-100: 219 234 254; --primary-200: 191 219 254;
-            --primary-400: 96 165 250; --primary-500: 59 130 246; --primary-600: 37 99 235;
+            --primary-400: 96 165 250; --primary-500: 88 166 255; --primary-600: 56 139 253;
             --primary-800: 30 64 175; --primary-900: 30 58 138;
+            --ui-bg:#0d1117; --ui-bg2:#161b22; --ui-card:#1c2431; --ui-border:#30363d;
+            --ui-text:#e6edf3; --ui-muted:#8b949e; --ui-green:#3fb950; --ui-red:#f85149;
         }
-        /* 2. Emerald Green */
-        [data-theme="emerald"] {
-            --primary-50: 236 253 245; --primary-100: 209 250 229; --primary-200: 167 243 208;
-            --primary-400: 52 211 153; --primary-500: 16 185 129; --primary-600: 5 150 105;
-            --primary-800: 6 95 70; --primary-900: 6 78 59;
-        }
-        /* 3. Rose Red */
-        [data-theme="rose"] {
-            --primary-50: 255 241 242; --primary-100: 255 228 230; --primary-200: 254 205 211;
-            --primary-400: 251 113 133; --primary-500: 244 63 94; --primary-600: 225 29 72;
-            --primary-800: 159 18 57; --primary-900: 136 19 55;
-        }
-        /* 4. Sunset Orange */[data-theme="orange"] {
-            --primary-50: 255 237 213; --primary-100: 255 237 213; --primary-200: 253 186 116;
-            --primary-400: 251 146 60; --primary-500: 249 115 22; --primary-600: 234 88 12;
-            --primary-800: 154 52 18; --primary-900: 124 45 18;
-        }
-        /* 5. Amber Yellow */
-        [data-theme="amber"] {
-            --primary-50: 255 251 235; --primary-100: 254 243 199; --primary-200: 253 230 138;
-            --primary-400: 251 191 36; --primary-500: 245 158 11; --primary-600: 217 119 6;
-            --primary-800: 146 64 14; --primary-900: 120 53 15;
-        }
-        /* 6. Violet Purple */[data-theme="violet"] {
-            --primary-50: 245 243 255; --primary-100: 237 233 254; --primary-200: 221 214 254;
-            --primary-400: 167 139 250; --primary-500: 139 92 246; --primary-600: 124 58 237;
-            --primary-800: 91 33 182; --primary-900: 76 29 149;
-        }
-        /* 7. Midnight Black (Slate) */
-        [data-theme="midnight"] {
-            --primary-50: 248 250 252; --primary-100: 241 245 249; --primary-200: 226 232 240;
-            --primary-400: 148 163 184; --primary-500: 100 116 139; --primary-600: 71 85 105;
-            --primary-800: 30 41 59; --primary-900: 15 23 42;
-        }
-        /* 8. Cyan */[data-theme="cyan"] {
-            --primary-50: 236 254 255; --primary-100: 207 250 254; --primary-200: 165 243 252;
-            --primary-400: 34 211 238; --primary-500: 6 182 212; --primary-600: 8 145 178;
-            --primary-800: 21 94 117; --primary-900: 22 78 99;
-        }
-        /* 9. Fuchsia */
-        [data-theme="fuchsia"] {
-            --primary-50: 253 244 255; --primary-100: 250 232 255; --primary-200: 245 208 254;
-            --primary-400: 232 121 249; --primary-500: 217 70 239; --primary-600: 192 38 211;
-            --primary-800: 134 25 143; --primary-900: 112 26 117;
-        }
-        /* 10. Lime */[data-theme="lime"] {
-            --primary-50: 247 254 231; --primary-100: 236 252 203; --primary-200: 217 249 157;
-            --primary-400: 163 230 53; --primary-500: 132 204 22; --primary-600: 101 163 13;
-            --primary-800: 63 98 18; --primary-900: 54 83 20;
-        }
-        /* 11. Indigo */
-        [data-theme="indigo"] {
-            --primary-50: 238 242 255; --primary-100: 224 231 255; --primary-200: 199 210 254;
-            --primary-400: 129 140 248; --primary-500: 99 102 241; --primary-600: 79 70 229;
-            --primary-800: 55 48 163; --primary-900: 49 46 129;
-        }
-        /* 12. Teal */
-        [data-theme="teal"] {
-            --primary-50: 240 253 250; --primary-100: 204 251 241; --primary-200: 153 246 228;
-            --primary-400: 45 212 191; --primary-500: 20 184 166; --primary-600: 13 148 136;
-            --primary-800: 17 94 89; --primary-900: 19 78 74;
-        }
-
-        @keyframes ping-slow { 0% {transform: scale(1); opacity: 0.8;} 50% {transform: scale(2.5); opacity: 0;} 100% {transform: scale(1); opacity: 0;} }
-        .ping-slow { animation: ping-slow 2s cubic-bezier(0,0,0.2,1) infinite; transform-origin: center; }
+        [data-theme="emerald"] { --primary-500:16 185 129; --primary-600:5 150 105; }
+        [data-theme="rose"] { --primary-500:244 63 94; --primary-600:225 29 72; }
+        [data-theme="orange"] { --primary-500:249 115 22; --primary-600:234 88 12; }
+        [data-theme="amber"] { --primary-500:245 158 11; --primary-600:217 119 6; }
+        [data-theme="violet"] { --primary-500:139 92 246; --primary-600:124 58 237; }
+        [data-theme="midnight"] { --primary-500:100 116 139; --primary-600:71 85 105; }
+        [data-theme="cyan"] { --primary-500:6 182 212; --primary-600:8 145 178; }
+        [data-theme="fuchsia"] { --primary-500:217 70 239; --primary-600:192 38 211; }
+        [data-theme="lime"] { --primary-500:132 204 22; --primary-600:101 163 13; }
+        [data-theme="indigo"] { --primary-500:99 102 241; --primary-600:79 70 229; }
+        [data-theme="teal"] { --primary-500:20 184 166; --primary-600:13 148 136; }
+        * { box-sizing:border-box; }
+        html, body { margin:0; min-height:100%; }
+        body { background:var(--ui-bg); color:var(--ui-text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; }
+        .app-header { position:sticky; top:0; z-index:40; background:rgba(28,36,49,.96); border-bottom:1px solid var(--ui-border); backdrop-filter:blur(12px); }
+        .app-container { max-width:1400px; margin:0 auto; padding:16px; }
+        .card { background:var(--ui-card); border:1px solid var(--ui-border); border-radius:10px; padding:18px; }
+        .card-title { font-size:14px; font-weight:600; color:var(--ui-text); }
+        .muted { color:var(--ui-muted); }
+        .mono { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; }
+        .stat-value { font-size:22px; font-weight:700; line-height:1.25; margin-top:6px; }
+        .status-dot { width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+        .status-ok { background:var(--ui-green); box-shadow:0 0 7px var(--ui-green); }
+        .status-error { background:var(--ui-red); box-shadow:0 0 7px var(--ui-red); }
+        .status-idle { background:var(--ui-muted); }
+        .data-table { width:100%; border-collapse:collapse; }
+        .data-table th { color:var(--ui-muted); background:var(--ui-bg2); font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; text-align:left; padding:10px 12px; position:sticky; top:0; z-index:5; }
+        .data-table td { padding:10px 12px; border-top:1px solid var(--ui-border); }
+        .data-table tr:hover td { background:rgba(88,166,255,.045); }
+        .scroll-table { overflow:auto; max-height:390px; border:1px solid var(--ui-border); border-radius:8px; }
+        .btn { border:1px solid var(--ui-border); background:var(--ui-bg2); color:var(--ui-text); border-radius:6px; padding:7px 13px; font-size:13px; font-weight:500; cursor:pointer; transition:.15s; }
+        .btn:hover { border-color:#58a6ff; }
+        .btn-primary { background:rgb(var(--primary-500)); border-color:rgb(var(--primary-500)); color:#fff; }
+        .btn-primary:hover { background:rgb(var(--primary-600)); border-color:rgb(var(--primary-600)); }
+        .control { width:100%; background:var(--ui-bg2); border:1px solid var(--ui-border); color:var(--ui-text); border-radius:6px; padding:8px 10px; font-size:13px; }
+        .control:focus { outline:none; border-color:#58a6ff; box-shadow:0 0 0 2px rgba(88,166,255,.15); }
+        .theme-button { background:var(--ui-bg2); border:1px solid var(--ui-border); color:var(--ui-text); border-radius:6px; padding:7px 11px; }
+        .metric-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px; }
+        .metric-span { grid-column:span 4; }
+        .wide-span { grid-column:span 6; }
+        @media(max-width:900px){ .metric-span,.wide-span{grid-column:span 12;} .app-container{padding:12px;} }
+        .sky-wrap { background:var(--ui-bg2); border:1px solid var(--ui-border); border-radius:8px; min-height:270px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .sky-wrap svg { width:min(100%,300px); height:auto; }
+        .divider { height:1px; background:var(--ui-border); }
+        .modal-backdrop { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:16px; }
+        .modal { width:100%; max-width:620px; max-height:90vh; overflow:auto; background:var(--ui-card); border:1px solid var(--ui-border); border-radius:10px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+        .hidden { display:none !important; }
+        .theme-menu { position:absolute; right:0; top:calc(100% + 6px); width:220px; max-height:340px; overflow:auto; background:var(--ui-card); border:1px solid var(--ui-border); border-radius:8px; box-shadow:0 16px 40px rgba(0,0,0,.4); padding:6px; z-index:80; }
+        .theme-menu button { width:100%; border:0; background:transparent; color:var(--ui-text); padding:8px 10px; text-align:left; border-radius:5px; cursor:pointer; }
+        .theme-menu button:hover { background:var(--ui-bg2); }
+        @keyframes ping-slow { 0%{transform:scale(1);opacity:.8} 50%{transform:scale(2.5);opacity:0} 100%{transform:scale(1);opacity:0} }
+        .ping-slow { animation:ping-slow 2s cubic-bezier(0,0,.2,1) infinite; transform-origin:center; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen pb-10 transition-colors">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        
-        <!-- Header & Local Time -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            
-            <!-- LEFT SIDE: Logo & Titles -->
-            <div class="flex items-center gap-5">
-                <img src="/static/images/ntp-dashboard-logo.png" alt="NTP Server Logo" class="w-20 h-20 md:w-24 md:h-24 object-contain rounded-full shadow-[0_0_15px_rgba(var(--primary-500),0.3)] border border-primary-500/30 bg-[#0f172a] p-1">
-                
-                <div>
-                    <h1 class="text-3xl font-bold text-primary-500">NTP Dashboard</h1>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-mono flex flex-col gap-1">
-                        <div>Local Display Time: <span id="localTimeDisplay" class="font-bold text-gray-700 dark:text-gray-200"></span></div>
-                        <div>GPS Satellite Time: <span id="gpsTimeDisplay" class="font-bold text-primary-500">Waiting for sync...</span></div>
+<body>
+    <header class="app-header">
+        <div class="app-container" style="padding-top:11px;padding-bottom:11px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                    <div style="font-size:26px;line-height:1;">⏱</div>
+                    <div style="min-width:0;">
+                        <div style="font-size:18px;font-weight:700;color:#58a6ff;">NTP Dashboard</div>
+                        <div class="muted" style="font-size:11px;">NTP / Chrony / GPS status</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- RIGHT SIDE: Controls -->
-            <div class="flex flex-col items-end gap-3">
-                <!-- Light/System/Dark Icons -->
-                <div class="flex items-center bg-gray-200 dark:bg-gray-800 p-1 rounded-lg border border-gray-300 dark:border-gray-700">
-                    <button id="btn-light" onclick="setThemeMode('light')" class="p-1.5 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100" title="Light Mode">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                    </button>
-                    <button id="btn-system" onclick="setThemeMode('system')" class="p-1.5 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100" title="System Theme">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                    </button>
-                    <button id="btn-dark" onclick="setThemeMode('dark')" class="p-1.5 rounded-md transition-all duration-200 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100" title="Dark Mode">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                    </button>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-3">
-                    <!-- THEME DROPDOWN MENU -->
-                    <div class="relative" id="themeDropdownWrapper">
-                        <button onclick="toggleThemeMenu(event)" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition flex items-center gap-2">
-                            Themes
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </button>
-                        
-                        <!-- The Dropdown List -->
-                        <div id="themeMenu" class="hidden absolute right-0 top-full mt-2 w-56 max-h-96 overflow-y-auto rounded-xl shadow-2xl bg-white dark:bg-[#1e2330] border border-gray-200 dark:border-gray-700 py-2 z-50 text-sm font-medium">
-                            <!-- Populated dynamically by JS -->
-                        </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                    <div style="display:flex;gap:2px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;padding:2px;">
+                        <button id="btn-light" onclick="setThemeMode('light')" class="theme-button" title="Light mode">☀</button>
+                        <button id="btn-system" onclick="setThemeMode('system')" class="theme-button" title="System theme">▣</button>
+                        <button id="btn-dark" onclick="setThemeMode('dark')" class="theme-button" title="Dark mode">☾</button>
                     </div>
-
-                    <!-- Connection Setup Button -->
-                    <button onclick="openSettings()" class="px-4 py-2 rounded-lg bg-primary-500 text-white font-medium shadow-lg shadow-primary-500/30 hover:bg-primary-600 transition">Connection Setup</button>
-                </div>
-            </div>
-            
-        </div> <!-- ^^^ THIS IS THE DIV THAT WAS MISSING! ^^^ -->
-
-        <!-- Metric Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-20 gap-6 mb-6">
-            <div id="timeOffsetCard" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 block lg:col-span-10 min-w-[280px] transition-all duration-300">
-                <h2 class="text-lg md:text-base lg:text-md xl:text-lg font-semibold mb-2 text-gray-600 dark:text-gray-300 leading-tight whitespace-nowrap">System Time Offset</h2>
-                <div class="text-xl font-mono font-bold" id="sysOffset">Loading...</div>
-            </div>
-            <div id="connModeCard" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 block lg:col-span-10 min-w-[240px] transition-all duration-300">
-                <h2 class="text-lg md:text-base lg:text-md xl:text-lg font-semibold mb-2 text-gray-600 dark:text-gray-300 leading-tight whitespace-nowrap">Connection Target</h2>
-                <div class="text-lg font-medium text-primary-500" id="connMode">Loading...</div>
-            </div>
-            <!-- Hardware Resource Monitor Widget (Hidden by default based on config) -->
-            <div id="resourceMonitor" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700 md:col-span-2 lg:col-span-6 min-w-[240px] transition-all duration-300">
-                <h2 class="text-lg md:text-base lg:text-md xl:text-lg font-semibold mb-3 text-gray-600 dark:text-gray-300 flex items-center justify-between leading-tight whitespace-nowrap">
-                    Hardware Status
-                    <div id="resourceStatus" class="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse"></div>
-                </h2>
-                <div class="space-y-3 font-mono text-sm">
-                    <!-- CPU -->
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500 dark:text-gray-400">CPU Usage</span>
-                        <span class="font-bold text-gray-800 dark:text-gray-200" id="cpuUsageText">--%</span>
+                    <div style="position:relative;" id="themeDropdownWrapper">
+                        <button onclick="toggleThemeMenu(event)" class="btn">Theme ▾</button>
+                        <div id="themeMenu" class="theme-menu hidden"></div>
                     </div>
-                    <!-- RAM -->
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500 dark:text-gray-400">RAM Usage</span>
-                        <span class="font-bold text-gray-800 dark:text-gray-200" id="ramUsageText">-- / -- MB (--%)</span>
-                    </div>
-                    <!-- Temp -->
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-500 dark:text-gray-400">Core Temp</span>
-                        <span class="font-bold text-gray-800 dark:text-gray-200" id="cpuTempText">-- °C</span>
-                    </div>
+                    <button onclick="openSettings()" class="btn btn-primary">Connection Setup</button>
                 </div>
             </div>
         </div>
+    </header>
 
-        <!-- NTP Sources Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6 border border-gray-200 dark:border-gray-700">
-            <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
-                <h2 class="font-semibold text-gray-700 dark:text-gray-300">NTP Sources (chronyc sources)</h2>
-                <div class="flex items-center gap-4">
-                    <button onclick="openClientsModal()" class="px-3 py-1 rounded text-xs font-bold bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200 border border-primary-200 dark:border-primary-800 hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors shadow-sm">
-                        View Clients
-                    </button>
-                    <span class="text-xs text-gray-500 font-mono">Updates 2s</span>
+    <main class="app-container">
+        <section style="display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+            <div>
+                <h1 style="margin:0;font-size:22px;">Time Synchronization</h1>
+                <div class="muted" style="margin-top:4px;">Live status from the configured NTP server and GPS receiver.</div>
+            </div>
+            <div class="mono muted" style="font-size:12px;text-align:right;">
+                <div>Local <span id="localTimeDisplay" style="color:var(--ui-text);font-weight:600;"></span></div>
+                <div>GPS <span id="gpsTimeDisplay" style="color:#58a6ff;font-weight:600;">Waiting for sync...</span></div>
+            </div>
+        </section>
+
+        <section class="metric-grid" style="margin-bottom:16px;">
+            <div id="timeOffsetCard" class="card metric-span">
+                <div class="card-title">System Time Offset</div>
+                <div id="sysOffset" class="stat-value mono">Loading...</div>
+                <div class="muted" style="font-size:12px;margin-top:6px;">Chrony tracking offset</div>
+            </div>
+            <div id="connModeCard" class="card metric-span">
+                <div class="card-title">Connection Target</div>
+                <div id="connMode" class="stat-value" style="font-size:18px;color:#58a6ff;">Loading...</div>
+                <div class="muted" style="font-size:12px;margin-top:6px;">Current data source</div>
+            </div>
+            <div id="resourceMonitor" class="card metric-span hidden">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div class="card-title">Hardware Status</div>
+                    <span id="resourceStatus" class="status-dot status-idle"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
+                    <div><div class="muted" style="font-size:11px;">CPU</div><div id="cpuUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
+                    <div><div class="muted" style="font-size:11px;">RAM</div><div id="ramUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
+                    <div><div class="muted" style="font-size:11px;">TEMP</div><div id="cpuTempText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm font-mono whitespace-nowrap">
-                    <thead class="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400">
-                        <tr><th class="p-4">State</th><th class="p-4">Source</th><th class="p-4">Stratum</th><th class="p-4">Poll</th><th class="p-4">Reach</th><th class="p-4">LastRx</th><th class="p-4">Offset</th></tr>
-                    </thead>
-                    <tbody id="ntpTableBody" class="divide-y dark:divide-gray-700"></tbody>
+        </section>
+
+        <section class="card wide-span" style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
+                <div>
+                    <div class="card-title">NTP Sources</div>
+                    <div class="muted" style="font-size:12px;margin-top:3px;">Chrony peers and synchronization state</div>
+                </div>
+                <button onclick="openClientsModal()" class="btn">Connected Clients</button>
+            </div>
+            <div class="scroll-table">
+                <table class="data-table mono">
+                    <thead><tr><th>State</th><th>Source</th><th>Stratum</th><th>Poll</th><th>Reach</th><th>Last RX</th><th>Last Sample</th></tr></thead>
+                    <tbody id="ntpTableBody"><tr><td colspan="7" class="muted">Loading NTP sources...</td></tr></tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-        <!-- GPS Data -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden flex flex-col lg:flex-row border border-gray-200 dark:border-gray-700">
-            
-            <!-- Skyplot -->
-            <div class="p-6 bg-[#0a0f1a] flex flex-col items-center justify-center relative w-full lg:w-1/3 border-b lg:border-b-0 lg:border-r dark:border-gray-700">
-                <h2 class="text-white font-semibold mb-2 text-center w-full">GPS Skyplot</h2>
-                <div class="w-full h-1 bg-gray-800 mb-6 rounded overflow-hidden">
-                    <div id="sweepBar" class="h-full bg-primary-500 transition-all duration-1000 linear" style="width:100%"></div>
+        <section class="metric-grid">
+            <div class="card wide-span">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <div><div class="card-title">GPS Sky View</div><div class="muted" style="font-size:12px;margin-top:3px;">Satellite positions and lock state</div></div>
+                    <span id="satCount" style="font-size:12px;padding:4px 9px;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-bg2);">0 Locked</span>
                 </div>
-                <div class="relative w-64 h-64">
-                    <svg viewBox="0 0 200 200" class="w-full h-full rounded-full shadow-[0_0_30px_rgba(var(--primary-500),0.2)]">
-                        <circle cx="100" cy="100" r="100" fill="#0f172a" />
-                        <ellipse cx="100" cy="100" rx="100" ry="35" fill="none" stroke="rgba(255,255,255,0.15)" />
-                        <ellipse cx="100" cy="100" rx="35" ry="100" fill="none" stroke="rgba(255,255,255,0.15)" />
-                        <circle cx="100" cy="100" r="99" fill="none" stroke="rgba(255,255,255,0.3)" />
-                        <line x1="100" y1="0" x2="100" y2="200" stroke="rgba(255,255,255,0.15)" />
-                        <line x1="0" y1="100" x2="200" y2="100" stroke="rgba(255,255,255,0.15)" />
+                <div class="sky-wrap">
+                    <svg viewBox="0 0 200 200" aria-label="GPS satellite sky plot">
+                        <circle cx="100" cy="100" r="92" fill="none" stroke="#30363d" stroke-width="1"/>
+                        <circle cx="100" cy="100" r="61" fill="none" stroke="#30363d" stroke-width="1" stroke-dasharray="2 3"/>
+                        <circle cx="100" cy="100" r="31" fill="none" stroke="#30363d" stroke-width="1" stroke-dasharray="2 3"/>
+                        <line x1="8" y1="100" x2="192" y2="100" stroke="#30363d"/><line x1="100" y1="8" x2="100" y2="192" stroke="#30363d"/>
+                        <text x="100" y="16" text-anchor="middle" fill="#8b949e" font-size="7">N</text><text x="187" y="103" text-anchor="middle" fill="#8b949e" font-size="7">E</text><text x="100" y="191" text-anchor="middle" fill="#8b949e" font-size="7">S</text><text x="13" y="103" text-anchor="middle" fill="#8b949e" font-size="7">W</text>
                         <g id="satellitesLayer"></g>
                     </svg>
                 </div>
+                <div class="muted" style="font-size:11px;margin-top:8px;">Green satellites are currently used for the fix; red satellites are visible but not selected.</div>
             </div>
-            
-            <!-- GPS Table -->
-            <div class="flex-1 overflow-x-auto h-[350px] overflow-y-auto">
-                <div class="p-4 border-b dark:border-gray-700 flex justify-between bg-gray-50 dark:bg-gray-800 sticky top-0 z-10 shadow-sm">
-                    <span class="font-semibold text-gray-700 dark:text-gray-300">Satellites (gpspipe)</span>
-                    <span class="px-3 py-1 rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200 font-bold text-sm" id="satCount">0 Locked</span>
+
+            <div class="card wide-span">
+                <div style="margin-bottom:14px;"><div class="card-title">GPS Satellites</div><div class="muted" style="font-size:12px;margin-top:3px;">Detailed receiver data</div></div>
+                <div class="scroll-table" style="max-height:330px;">
+                    <table class="data-table mono">
+                        <thead><tr><th>PRN</th><th>Elev</th><th>Azim</th><th>SNR</th><th>Status</th></tr></thead>
+                        <tbody id="satTableBody"><tr><td colspan="5" class="muted">Waiting for GPS data...</td></tr></tbody>
+                    </table>
                 </div>
-                <table class="w-full text-left text-sm font-mono whitespace-nowrap">
-                    <thead class="bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400">
-                        <tr><th class="p-4">PRN</th><th class="p-4">Elev</th><th class="p-4">Azim</th><th class="p-4">SNR</th><th class="p-4">Status</th></tr>
-                    </thead>
-                    <tbody id="satTableBody" class="divide-y dark:divide-gray-700"></tbody>
-                </table>
+                <div id="sweepBar" style="height:3px;background:#58a6ff;width:100%;margin-top:10px;border-radius:3px;transition:width 1s linear;"></div>
             </div>
-        </div>
+        </section>
 
-        <!-- Version Footer & Update Notification -->
-        <div class="mt-8 flex justify-center items-center text-sm font-mono text-gray-500 dark:text-gray-400">
-            <a href="https://github.com/NightHawkATL/ntp-dashboard" target="_blank" rel="noopener noreferrer" class="hover:text-primary-500 transition-colors">ntp-dashboard</a>
-            <a href="https://github.com/NightHawkATL/ntp-dashboard/releases" target="_blank" rel="noopener noreferrer" id="versionDisplay" class="ml-2 hover:text-primary-500 transition-colors">{{ app_version }}</a>
-            
-            <a href="https://github.com/NightHawkATL/ntp-dashboard/releases/latest" target="_blank" rel="noopener noreferrer" id="updateBadge" class="hidden ml-3 px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400 border border-green-200 dark:border-green-800 animate-pulse hover:bg-green-200 dark:hover:bg-green-900 transition-colors">
-                New Update: vX.X.X
-            </a>
-        </div>
-    </div>
+        <footer style="display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--ui-border);margin-top:24px;padding:14px 2px;color:var(--ui-muted);font-size:11px;">
+            <span>NTP Dashboard</span>
+            <span class="mono">v{{ app_version }}</span>
+        </footer>
+    </main>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 px-4 flex backdrop-blur-sm transition-opacity">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-2xl font-bold mb-4">Configuration</h2>
+    <div id="settingsModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <div><h2 style="margin:0;font-size:20px;">Connection Setup</h2><div class="muted" style="font-size:12px;margin-top:4px;">Configure local Chrony or a remote SSH target.</div></div>
+                <button type="button" onclick="closeSettings()" class="btn">✕</button>
+            </div>
             <form id="configForm">
-                <label class="block text-sm font-medium mb-1">Target Mode</label>
-                <select id="mode" class="w-full mb-4 p-2.5 rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500" onchange="toggleRemote()">
+                <label class="muted" style="display:block;margin-bottom:6px;">Target Mode</label>
+                <select id="mode" class="control" onchange="toggleRemote()">
                     <option value="local">Local Host Exec (On this Server)</option>
                     <option value="remote">Remote SSH Exec (Another Server)</option>
                 </select>
-                
-                <div id="remoteFields" class="hidden space-y-4 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Server IP</label>
-                        <input type="text" id="host" class="w-full p-2.5 rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500" placeholder="192.168.1.10">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">SSH Username</label>
-                        <input type="text" id="user" class="w-full p-2.5 rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500" placeholder="ubuntu">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">SSH Password</label>
-                        <input type="password" id="password" class="w-full p-2.5 rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500" placeholder="Leave blank if using SSH Key">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">SSH Private Key (Optional)</label>
-                        <textarea id="ssh_key" rows="3" class="w-full p-2.5 rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500 font-mono text-xs" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;..."></textarea>
-                    </div>
+                <div id="remoteFields" class="hidden" style="margin-top:14px;display:grid;gap:12px;">
+                    <div><label class="muted">Server IP / Host</label><input id="host" class="control" placeholder="192.168.1.10"></div>
+                    <div><label class="muted">SSH Username</label><input id="user" class="control" placeholder="ubuntu"></div>
+                    <div><label class="muted">SSH Password</label><input type="password" id="password" class="control" placeholder="Leave blank when using an SSH key"></div>
+                    <div><label class="muted">SSH Private Key</label><textarea id="ssh_key" rows="5" class="control mono" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></div>
                 </div>
-                
-                <div class="flex items-center gap-2 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <input type="checkbox" id="enable_monitor" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer">
-                    <label for="enable_monitor" class="text-sm font-medium text-gray-900 dark:text-gray-300 cursor-pointer select-none">
-                        Enable Hardware Resource Monitor
-                        <p class="text-xs font-normal text-gray-500 dark:text-gray-400 mt-0.5">Displays CPU, RAM, and Temperature for the selected target mode.</p>
-                    </label>
+                <div style="margin-top:14px;padding:12px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;display:flex;gap:10px;align-items:flex-start;">
+                    <input type="checkbox" id="enable_monitor" style="margin-top:3px;">
+                    <label for="enable_monitor" style="cursor:pointer;"><span style="font-weight:600;">Enable Hardware Resource Monitor</span><span class="muted" style="display:block;font-size:11px;margin-top:3px;">Shows CPU, RAM and temperature for the selected target.</span></label>
                 </div>
-
-                <div class="flex justify-end gap-3 mt-2">
-                    <button type="button" onclick="closeSettings()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition">Save & Apply</button>
+                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
+                    <button type="button" onclick="closeSettings()" class="btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save & Apply</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Connected Clients Modal -->
-    <div id="clientsModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 px-4 flex backdrop-blur-sm transition-opacity">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl p-6 border border-gray-200 dark:border-gray-700 flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">Connected NTP Clients</h2>
-                <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Sort By:</label>
-                    <select id="clientSort" onchange="renderClientsTable()" class="p-1.5 text-sm rounded-lg border dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50 dark:bg-gray-700 cursor-pointer">
-                        <option value="hits_desc">Hits (High to Low)</option>
-                        <option value="recent">Most Recent Activity</option>
-                        <option value="ip_asc">IP Address</option>
-                    </select>
-                </div>
+    <div id="clientsModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:800px;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
+                <div><h2 style="margin:0;font-size:20px;">Connected NTP Clients</h2><div class="muted" style="font-size:12px;margin-top:4px;">Clients reported by Chrony.</div></div>
+                <button type="button" onclick="closeClientsModal()" class="btn">✕</button>
             </div>
-            
-            <div class="overflow-y-auto flex-1 border rounded-lg dark:border-gray-700 shadow-inner">
-                <table class="w-full text-left text-sm font-mono whitespace-nowrap">
-                    <thead class="bg-gray-100 dark:bg-gray-700/80 text-gray-500 dark:text-gray-400 sticky top-0 shadow-sm">
-                        <tr>
-                            <th class="p-4">IP Address</th>
-                            <th class="p-4">NTP Hits</th>
-                            <th class="p-4">Dropped</th>
-                            <th class="p-4">Last Seen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientsTableBody" class="divide-y dark:divide-gray-700">
-                        <tr><td colspan="4" class="p-4 text-center text-gray-500">Loading clients...</td></tr>
-                    </tbody>
-                </table>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:10px;">
+                <label class="muted" style="font-size:11px;">Sort</label>
+                <select id="clientSort" onchange="renderClientsTable()" class="control" style="width:auto;min-width:180px;">
+                    <option value="hits_desc">Hits (High to Low)</option><option value="recent">Most Recent Activity</option><option value="ip_asc">IP Address</option>
+                </select>
             </div>
-            
-            <div class="flex justify-end gap-3 mt-5 pt-4 border-t dark:border-gray-700">
-                <button type="button" onclick="fetchClients()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">Refresh Data</button>
-                <button type="button" onclick="closeClientsModal()" class="px-4 py-2 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition shadow-md">Close</button>
+            <div class="scroll-table" style="max-height:55vh;">
+                <table class="data-table mono"><thead><tr><th>IP Address</th><th>NTP Hits</th><th>Dropped</th><th>Last Seen</th></tr></thead><tbody id="clientsTableBody"><tr><td colspan="4" class="muted">Loading clients...</td></tr></tbody></table>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ui-border);">
+                <button type="button" onclick="fetchClients()" class="btn">Refresh Data</button>
+                <button type="button" onclick="closeClientsModal()" class="btn btn-primary">Close</button>
             </div>
         </div>
     </div>
 
     <script src="/static/dashboard.js"></script>
+    <script src="/static/ui-refresh.js"></script>
 </body>
 </html>
