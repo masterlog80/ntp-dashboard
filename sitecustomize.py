@@ -1,149 +1,151 @@
-"""Early runtime compatibility layer for NTP Dashboard.
+"""Runtime footer compatibility for NTP Dashboard.
 
-Python imports ``sitecustomize`` automatically during normal startup. This
-means the dashboard keeps its runtime footer even when an external launcher
-(Kubernetes, Docker Compose, etc.) overrides the image CMD and starts
-``app.py`` directly instead of ``run.py``.
-
-The normal ``run.py`` path still provides richer Docker/Kubernetes metadata;
-this module is the safe fallback path.
+Python loads sitecustomize before importing the application. We patch Flask's
+constructor so the footer handler is attached to the actual Flask app even
+when a deployment starts app.py directly and bypasses server.py/run.py.
 """
+import os
 import re
-import time
 from datetime import datetime, timezone
+from html import escape
 
 
-def _process_start_time():
+FOOTER_RE = re.compile(
+    r'<footer(?:\s+[^>]*)?class=["\']app-footer["\'][^>]*>.*?</footer>',
+    re.DOTALL,
+)
+
+
+def _started_at():
     try:
         hz = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
         with open("/proc/self/stat", encoding="utf-8") as f:
             stat = f.read()
         start_ticks = int(stat.rsplit(") ", 1)[1].split()[19])
+        boot = None
         with open("/proc/stat", encoding="utf-8") as f:
             for line in f:
                 if line.startswith("btime "):
-                    boot = float(line.split()[1])
-                    return datetime.fromtimestamp(
-                        boot + start_ticks / hz, tz=timezone.utc
-                    ).isoformat(timespec="seconds")
+                    boot = int(line.split()[1])
+                    break
+        if boot is not None:
+            return datetime.fromtimestamp(
+                boot + start_ticks / hz, timezone.utc
+            ).isoformat(timespec="seconds")
     except Exception:
         pass
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-# Imported lazily below so Python startup remains cheap when this module is
-# loaded by tools other than the dashboard.
-import os
-
-STARTED_AT = _process_start_time()
-IMAGE_NAME = os.environ.get("IMAGE_NAME", "ntp-dashboard") or "ntp-dashboard"
+STARTED_AT = _started_at()
+IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
 IMAGE_VERSION = (
     os.environ.get("IMAGE_VERSION")
     or os.environ.get("APP_VERSION")
     or "dev"
-)
+).strip() or "dev"
 
 
-try:
-    import flask
-    from markupsafe import Markup
+def _patch_flask():
+    try:
+        from flask import Flask
+    except Exception:
+        return
 
-    _original_render_template = flask.render_template
+    if getattr(Flask, "_ntp_dashboard_footer_patched", False):
+        return
 
-    def _render_template_with_runtime(template_name, **context):
-        context.setdefault("app_started_at", STARTED_AT)
-        context.setdefault("image_name", IMAGE_NAME)
-        context.setdefault("image_version", IMAGE_VERSION)
+    original_init = Flask.__init__
 
-        rendered = _original_render_template(template_name, **context)
+    def patched_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
 
-        # Only touch the dashboard footer. The operation is deliberately
-        # idempotent so run.py can add its richer footer without duplication.
-        if "id=\"app-footer\"" in rendered:
-            return rendered
+        @self.after_request
+        def _ntp_dashboard_footer(response):
+            try:
+                if not response.content_type or not response.content_type.startswith("text/html"):
+                    return response
 
-        footer_re = re.compile(
-            r'<footer class="app-footer">.*?</footer>', re.DOTALL
-        )
-        footer = footer_re.search(rendered)
-        if not footer:
-            return rendered
+                document = response.get_data(as_text=True)
+                match = FOOTER_RE.search(document)
+                if not match:
+                    return response
 
-        replacement = (
-            '<footer id="app-footer" class="app-footer">'
-            '<div class="footer-left">'
-            '<span class="footer-name">⏱ NTP Dashboard</span>'
-            '<span class="footer-sep">·</span>'
-            '<span>Started <span id="footer-started" '
-            'class="mono" data-runtime-started="1">'
-            f'{STARTED_AT}</span></span>'
-            '</div>'
-            f'<span class="footer-image mono">{IMAGE_NAME}:{IMAGE_VERSION}</span>'
-            '</footer>'
-        )
+                footer = (
+                    '<footer id="app-footer" class="app-footer">'
+                    '<div class="footer-left">'
+                    '<span class="footer-name">⏱ NTP Dashboard</span>'
+                    '<span class="footer-sep">·</span>'
+                    '<span>Started <span id="footer-started" data-runtime-started="1">'
+                    + escape(STARTED_AT)
+                    + '</span></span>'
+                    '</div>'
+                    '<span id="footer-image" class="footer-image">'
+                    + escape(f"{IMAGE_NAME}:{IMAGE_VERSION}")
+                    + '</span>'
+                    '</footer>'
+                )
+                document = document[:match.start()] + footer + document[match.end():]
 
-        rendered = rendered[:footer.start()] + replacement + rendered[footer.end():]
-
-        css = """
+                css = """
 <style>
-/* Runtime footer: intentionally mirrors the HLS Proxy footer layout. */
 #app-footer.app-footer {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    border-top: 1px solid var(--ui-border);
-    padding: 1rem max(1.5rem, calc((100vw - 1400px) / 2 + 1.5rem));
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: .75rem;
+    gap: 12px;
+    border-top: 1px solid var(--ui-border);
+    margin-top: 24px;
+    padding: 14px 2px;
     color: var(--ui-muted);
     font-size: 11px;
 }
 #app-footer .footer-left {
     display: flex;
     align-items: center;
-    gap: .75rem;
+    gap: 8px;
     flex-wrap: wrap;
     min-width: 0;
 }
-#app-footer .footer-name {
-    color: var(--ui-text);
-    font-weight: 600;
-}
+#app-footer .footer-name { color: var(--ui-muted); font-weight: 500; }
 #app-footer .footer-sep { color: var(--ui-muted); }
 #app-footer .footer-image {
-    color: var(--ui-text);
+    color: var(--ui-muted);
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     white-space: nowrap;
 }
-@media (max-width: 700px) {
-    #app-footer.app-footer {
-        align-items: flex-start;
-        flex-direction: column;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-    }
+@media(max-width:700px){
+    #app-footer.app-footer { align-items:flex-start; flex-direction:column; }
 }
 </style>
 """
-        rendered = rendered.replace("</head>", css + "</head>", 1)
+                if "#app-footer.app-footer" not in document:
+                    document = document.replace("</style>", css + "</style>", 1)
 
-        script = """
+                script = """
 <script>
 (function () {
-    const el = document.querySelector('[data-runtime-started="1"]');
+    const el = document.getElementById('footer-started');
     if (!el) return;
-    const date = new Date(el.textContent.trim());
-    if (!Number.isNaN(date.getTime())) {
-        el.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    const d = new Date(el.textContent.trim());
+    if (!Number.isNaN(d.getTime())) {
+        el.textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
     }
 })();
 </script>
 """
-        rendered = rendered.replace("</body>", script + "</body>", 1)
-        return Markup(rendered)
+                if "data-runtime-started" in document:
+                    document = document.replace("</body>", script + "</body>", 1)
 
-    flask.render_template = _render_template_with_runtime
-except Exception:
-    # Never prevent the dashboard from starting because the compatibility
-    # footer is unavailable.
-    pass
+                response.set_data(document)
+            except Exception:
+                # Metadata must never stop the dashboard from serving.
+                pass
+            return response
+
+    Flask.__init__ = patched_init
+    Flask._ntp_dashboard_footer_patched = True
+
+
+_patch_flask()
