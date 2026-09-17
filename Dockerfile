@@ -46,10 +46,11 @@ COPY --from=builder /install /usr/local
 # "latest", matching the normal Docker tag used for this image.
 RUN printf '%s\n' "$APP_VERSION" > /app/.version
 
-# Install the runtime hook into Python's site-packages. A .pth file is
+# Install the runtime hooks into Python's site-packages. The .pth file is
 # processed by Python before app.py is imported, so this works even when
 # Docker/Kubernetes explicitly starts `python app.py` and bypasses run.py.
 COPY ntp_dashboard_runtime.py /usr/local/lib/python3.13/site-packages/
+COPY ntp_dashboard_favicon.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_runtime.pth /usr/local/lib/python3.13/site-packages/
 
 COPY app.py ./
