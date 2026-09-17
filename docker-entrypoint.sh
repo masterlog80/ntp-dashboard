@@ -21,7 +21,21 @@ if [ "${ENABLE_GPSD:-false}" = "true" ]; then
     gpsd -N -G -F "$GPSD_SOCKET" "$GPS_DEVICE" &
     GPSD_PID=$!
 
-    trap 'kill "$GPSD_PID" 2>/dev/null || true' INT TERM EXIT
+    "$@" &
+    APP_PID=$!
+
+    cleanup() {
+        kill "$APP_PID" 2>/dev/null || true
+        kill "$GPSD_PID" 2>/dev/null || true
+    }
+    trap cleanup INT TERM EXIT
+
+    wait "$APP_PID"
+    STATUS=$?
+    trap - INT TERM EXIT
+    kill "$GPSD_PID" 2>/dev/null || true
+    wait "$GPSD_PID" 2>/dev/null || true
+    exit "$STATUS"
 fi
 
 exec "$@"
