@@ -44,7 +44,6 @@ RUN printf '%s\n' "$APP_VERSION" > /app/.version
 
 COPY ntp_dashboard_runtime.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_favicon.py /usr/local/lib/python3.13/site-packages/
-COPY ntp_dashboard_health.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_runtime.pth /usr/local/lib/python3.13/site-packages/
 
 COPY app.py ./
@@ -74,8 +73,9 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
 
 EXPOSE 55234
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:55234/healthz', timeout=2)"
+# Use Alpine's wget for the health probe so the check does not pay Python startup/import cost.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -q -O /dev/null http://127.0.0.1:55234/healthz || exit 1
 
 ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
 CMD ["python", "run.py"]
