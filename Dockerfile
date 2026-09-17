@@ -22,7 +22,7 @@ FROM python:3.13.14-alpine3.23
 
 WORKDIR /app
 
-ARG INSTALL_GPSD_CLIENTS=false
+ARG INSTALL_GPSD_CLIENTS=true
 ARG APP_VERSION=latest
 
 RUN set -eux; \
