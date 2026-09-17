@@ -79,14 +79,15 @@ def _container_id():
     return None
 
 
-def _k8s_request(path):
-    """Read a Kubernetes API endpoint using the Pod's projected SA token."""
+def _k8s_pod():
+    """Read this Pod from the Kubernetes API using the projected SA token."""
     sa_dir = "/var/run/secrets/kubernetes.io/serviceaccount"
     token_file = os.path.join(sa_dir, "token")
     namespace_file = os.path.join(sa_dir, "namespace")
     ca_file = os.path.join(sa_dir, "ca.crt")
+    pod_name = os.environ.get("HOSTNAME", "").strip()
 
-    if not all(os.path.exists(p) for p in (token_file, namespace_file, ca_file)):
+    if not pod_name or not all(os.path.exists(p) for p in (token_file, namespace_file, ca_file)):
         return None
 
     try:
@@ -99,7 +100,11 @@ def _k8s_request(path):
 
         host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
         port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
-        url = f"https://{host}:{port}{path}"
+        url = (
+            f"https://{host}:{port}/api/v1/namespaces/"
+            f"{urllib.parse.quote(namespace, safe='')}/pods/"
+            f"{urllib.parse.quote(pod_name, safe='')}"
+        )
         request = urllib.request.Request(
             url,
             headers={
@@ -110,34 +115,16 @@ def _k8s_request(path):
         )
         context = ssl.create_default_context(cadata=ca_data.decode("utf-8"))
         with urllib.request.urlopen(request, context=context, timeout=5) as response:
-            return json.loads(response.read().decode("utf-8")), namespace
+            return json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, OSError, ValueError, json.JSONDecodeError):
         return None
 
 
 def _detect_via_kubernetes():
     """Detect image name/version and actual container start time from the Pod."""
-    pod_name = os.environ.get("HOSTNAME", "").strip()
-    if not pod_name:
+    pod = _k8s_pod()
+    if not pod:
         return None
-
-    result = _k8s_request(
-        f"/api/v1/namespaces/{{namespace}}/pods/{urllib.parse.quote(pod_name, safe='')}"
-    )
-    if not result:
-        return None
-
-    pod, namespace = result
-    # The namespace placeholder is resolved by retrying with the namespace
-    # discovered from the projected ServiceAccount. This avoids trusting an
-    # environment variable supplied by the container image.
-    if "{namespace}" in f"/api/v1/namespaces/{{namespace}}/pods/{urllib.parse.quote(pod_name, safe='')}":
-        result = _k8s_request(
-            f"/api/v1/namespaces/{urllib.parse.quote(namespace, safe='')}/pods/{urllib.parse.quote(pod_name, safe='')}"
-        )
-        if not result:
-            return None
-        pod, namespace = result
 
     containers = pod.get("spec", {}).get("containers") or []
     statuses = pod.get("status", {}).get("containerStatuses") or []
@@ -156,15 +143,14 @@ def _detect_via_kubernetes():
     else:
         name, version = short, None
 
-    if version and "@sha256:" in version:
+    if version and version.startswith("sha256"):
         version = None
     if not version or version == "latest":
         version = os.environ.get("IMAGE_VERSION") or os.environ.get("APP_VERSION")
 
     started_at = None
     for status in statuses:
-        state = status.get("state") or {}
-        running = state.get("running") or {}
+        running = (status.get("state") or {}).get("running") or {}
         if running.get("startedAt"):
             started_at = running["startedAt"]
             break
@@ -204,7 +190,8 @@ def _image_info():
 
     k8s_info = _detect_via_kubernetes()
     if k8s_info:
-        return k8s_info
+        name, version, started_at = k8s_info
+        return name, version, started_at or fallback_started
 
     return fallback_name, fallback_version, fallback_started
 
