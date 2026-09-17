@@ -3,12 +3,11 @@
 The application itself remains in app.py. This wrapper captures the process
 start time and exposes image metadata to Jinja without requiring the Docker
 socket in the normal case. When the Docker socket is available, the running
-container's OCI labels and actual image reference are used automatically.
+container's image reference and OCI version label are detected automatically.
 """
 import json
 import os
 import socket
-import time
 from datetime import datetime, timezone
 
 from app import app
@@ -18,7 +17,8 @@ def _process_start_time():
     """Return PID 1 start time as a UTC ISO-8601 string when available."""
     try:
         hz = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
-        stat = open("/proc/self/stat", encoding="utf-8").read()
+        with open("/proc/self/stat", encoding="utf-8") as f:
+            stat = f.read()
         start_ticks = int(stat.rsplit(") ", 1)[1].split()[19])
         boot_time = None
         with open("/proc/stat", encoding="utf-8") as proc_stat:
@@ -62,7 +62,7 @@ def _docker_request(path):
 
 def _container_id():
     host = os.environ.get("HOSTNAME", "").strip()
-    if len(host) >= 12:
+    if len(host) >= 12 and all(c in "0123456789abcdef" for c in host.lower()):
         return host
     try:
         with open("/proc/self/cgroup", encoding="utf-8") as f:
@@ -103,18 +103,12 @@ def _image_info():
                     if tags:
                         version = tags[0].rsplit(":", 1)[-1]
 
-    # The OCI title is the application name; otherwise use the actual image name.
-    title = labels.get("org.opencontainers.image.title")
-    if title:
-        name = title.strip()
     return name or fallback_name, version or fallback_version
 
 
 _STARTED_AT = _process_start_time()
 _IMAGE_NAME, _IMAGE_VERSION = _image_info()
 
-# Make metadata available to every Jinja template while preserving app.py's
-# existing / route and API implementation.
 @app.context_processor
 def runtime_metadata():
     return {
@@ -127,7 +121,4 @@ def runtime_metadata():
 if __name__ == "__main__":
     debug_mode_env = os.environ.get("DEBUG_MODE", "").lower()
     is_debug = debug_mode_env == "true" or os.environ.get("LOG_LEVEL", "INFO").upper() == "DEBUG"
-    startup_config = app.view_functions.get("index") and None
-    # app.py's main block is intentionally not executed when imported. Keep
-    # the same port and debug behaviour here.
     app.run(host="0.0.0.0", port=55234, debug=is_debug)
