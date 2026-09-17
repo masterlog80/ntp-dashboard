@@ -2,17 +2,6 @@
 
 FROM python:3.13.14-alpine3.23 AS builder
 
-LABEL org.opencontainers.image.title="NTP Dashboard" \
-      org.opencontainers.image.description="A UI to check the status of NTP server" \
-      org.opencontainers.image.source="https://github.com/masterlog80/ntp-dashboard" \
-      org.opencontainers.image.url="https://github.com/masterlog80/ntp-dashboard" \
-      org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
-      org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
-      org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="0.2" \
-      org.opencontainers.image.created="2026-09-17T08:00:00Z"
-
 WORKDIR /build
 
 RUN apk add --no-cache \
@@ -34,6 +23,7 @@ FROM python:3.13.14-alpine3.23
 WORKDIR /app
 
 ARG INSTALL_GPSD_CLIENTS=false
+ARG APP_VERSION=latest
 
 RUN set -eux; \
     apk add --no-cache \
@@ -50,6 +40,12 @@ RUN set -eux; \
 
 COPY --from=builder /install /usr/local
 
+# Runtime metadata: keep the build-time image version available without
+# requiring Docker socket access or Kubernetes API access. The build workflow
+# can override APP_VERSION for versioned images; local/default images use
+# "latest", matching the normal Docker tag used for this image.
+RUN printf '%s\n' "$APP_VERSION" > /app/.version
+
 # Install the runtime hook into Python's site-packages. A .pth file is
 # processed by Python before app.py is imported, so this works even when
 # Docker/Kubernetes explicitly starts `python app.py` and bypasses run.py.
@@ -64,12 +60,21 @@ COPY templates ./templates
 COPY static ./static
 COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
 
-ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION} \
     IMAGE_NAME=ntp-dashboard \
     IMAGE_VERSION=${APP_VERSION} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
+
+LABEL org.opencontainers.image.title="NTP Dashboard" \
+      org.opencontainers.image.description="A UI to check the status of NTP server" \
+      org.opencontainers.image.source="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.url="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
+      org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${APP_VERSION}"
 
 EXPOSE 55234
 

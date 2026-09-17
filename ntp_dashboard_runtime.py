@@ -73,36 +73,57 @@ def kubernetes_pod_image():
         return None
 
 
+def version_file_image():
+    """Return the build-time image version written into /app/.version."""
+    try:
+        with open("/app/.version", encoding="utf-8") as f:
+            version = f.read().strip()
+        if version:
+            return version
+    except OSError:
+        pass
+    return None
+
+
 STARTED_AT = process_started_at()
 
-# In Kubernetes, the manifest's image reference (for example
-# ntp-dashboard:latest) is runtime metadata and cannot be recovered from
-# Dockerfile ENV values. Prefer the Pod spec when the service-account API is
-# available, then fall back to the environment used by standalone Docker.
+# Follow the same reliable strategy used by hls-proxy:
+#   1. build-time /app/.version (works in ordinary Docker without privileges)
+#   2. Kubernetes Pod image (when running under Kubernetes)
+#   3. environment fallback
+#
+# The version file is deliberately checked first because a normal Docker
+# container cannot see the tag it was started from unless the Docker socket is
+# mounted. The Dockerfile creates the file from APP_VERSION and defaults it to
+# "latest", which matches the normal ntp-dashboard:latest image.
+FILE_VERSION = version_file_image()
 K8S_IMAGE = kubernetes_pod_image()
-IMAGE_REF = K8S_IMAGE or (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
 
+if FILE_VERSION:
+    IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
+    IMAGE_VERSION = FILE_VERSION
+elif K8S_IMAGE:
+    def image_parts(image_ref):
+        image_ref = (image_ref or "").strip()
+        if not image_ref:
+            return "ntp-dashboard", "latest"
+        if "@" in image_ref:
+            name, digest = image_ref.rsplit("@", 1)
+            return name, digest
+        last = image_ref.rsplit("/", 1)[-1]
+        if ":" in last:
+            name, version = image_ref.rsplit(":", 1)
+            return name, version
+        return image_ref, "latest"
 
-def image_parts(image_ref):
-    image_ref = (image_ref or "").strip()
-    if not image_ref:
-        return "ntp-dashboard", "dev"
-    if "@" in image_ref:
-        name, digest = image_ref.rsplit("@", 1)
-        return name, digest
-    last = image_ref.rsplit("/", 1)[-1]
-    if ":" in last:
-        name, version = image_ref.rsplit(":", 1)
-        return name, version
-    return image_ref, "latest"
-
-
-IMAGE_NAME, IMAGE_VERSION = image_parts(IMAGE_REF)
-if not K8S_IMAGE:
+    IMAGE_NAME, IMAGE_VERSION = image_parts(K8S_IMAGE)
+else:
+    IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
     IMAGE_VERSION = (
-        (os.environ.get("IMAGE_VERSION") or os.environ.get("APP_VERSION") or IMAGE_VERSION).strip()
-        or IMAGE_VERSION
-    )
+        os.environ.get("IMAGE_VERSION")
+        or os.environ.get("APP_VERSION")
+        or "latest"
+    ).strip() or "latest"
 
 
 def install():
