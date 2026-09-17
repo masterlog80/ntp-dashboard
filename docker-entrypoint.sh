@@ -30,8 +30,11 @@ if [ "${ENABLE_GPSD:-false}" = "true" ]; then
     }
     trap cleanup INT TERM EXIT
 
+    set +e
     wait "$APP_PID"
     STATUS=$?
+    set -e
+
     trap - INT TERM EXIT
     kill "$GPSD_PID" 2>/dev/null || true
     wait "$GPSD_PID" 2>/dev/null || true
