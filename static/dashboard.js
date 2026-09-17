@@ -16,14 +16,53 @@ const themes = [
     ['lime','Lime','#84cc16'], ['indigo','Indigo','#6366f1'], ['teal','Teal','#14b8a6']
 ];
 
-function setThemeMode(mode) {
-    localStorage.themeMode = mode;
-    const dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.classList.toggle('dark', dark);
+function applyThemeMode(mode, persist = true) {
+    if (!['light','system','dark'].includes(mode)) mode = 'system';
+    if (persist) {
+        try { localStorage.themeMode = mode; } catch (_) {}
+    }
+
+    const root = document.documentElement;
+    root.dataset.colorMode = mode;
+
     ['light','system','dark'].forEach(id => {
         const button = document.getElementById(`btn-${id}`);
-        if (button) button.style.color = id === mode ? '#58a6ff' : '';
+        if (button) button.setAttribute('aria-pressed', id === mode ? 'true' : 'false');
     });
+
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+        const light = mode === 'light' ||
+            (mode === 'system' && window.matchMedia &&
+             window.matchMedia('(prefers-color-scheme: light)').matches);
+        meta.content = light ? '#ffffff' : '#1c2431';
+    }
+}
+
+function setThemeMode(mode) {
+    applyThemeMode(mode, true);
+}
+
+function initThemeMode() {
+    let mode = 'system';
+    try {
+        if (['light','system','dark'].includes(localStorage.themeMode)) {
+            mode = localStorage.themeMode;
+        }
+    } catch (_) {}
+
+    applyThemeMode(mode, false);
+
+    if (window.matchMedia) {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => {
+            let current = 'system';
+            try { current = localStorage.themeMode || 'system'; } catch (_) {}
+            if (current === 'system') applyThemeMode('system', false);
+        };
+        if (media.addEventListener) media.addEventListener('change', handleChange);
+        else if (media.addListener) media.addListener(handleChange);
+    }
 }
 
 function applyColorPalette(id) {
@@ -259,7 +298,7 @@ window.addEventListener('focus', refreshNow);
 window.addEventListener('online', refreshNow);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshNow(); });
 
-setThemeMode(localStorage.themeMode || 'system');
+initThemeMode();
 applyColorPalette(localStorage.themeColor || 'blue');
 loadUI();
 refreshNow();
