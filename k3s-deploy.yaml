@@ -165,3 +165,55 @@ spec:
           hostPath:
             path: /dev/ttyACM0
             type: CharDevice
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NTP Dashboard — Kubernetes / k3s RBAC
+#
+# The dashboard can query its own Pod through the Kubernetes API to detect the
+# image name, image tag/version and actual container start time for the UI
+# footer. The Role grants only GET access to Pods in the namespace where the
+# dashboard runs.
+#
+# The Deployment must use:
+#   serviceAccountName: ntp-dashboard-sa
+#
+# Quick-apply:
+#   kubectl apply -f k3s/rbac.yaml
+#   kubectl rollout restart deployment/ntp-dashboard
+#
+# If the dashboard is deployed into a namespace other than "default", change
+# EVERY occurrence of "namespace: default" below to match.
+# ─────────────────────────────────────────────────────────────────────────────
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ntp-dashboard-sa
+  namespace: default
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ntp-dashboard-pod-reader
+  namespace: default
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ntp-dashboard-pod-reader
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: ntp-dashboard-sa
+    namespace: default
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: ntp-dashboard-pod-reader
