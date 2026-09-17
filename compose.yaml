@@ -5,18 +5,20 @@ services:
     build:
       context: .
       args:
-        INSTALL_GPSD_CLIENTS: "false" # Set to true only if you need local gpspipe inside the container.
+        INSTALL_GPSD_CLIENTS: "false" # Set to true when local GPS monitoring is required.
     container_name: ntp-dashboard
-    network_mode: "host" # Allows the container to query host chrony; local gpspipe support is optional.
+    network_mode: "host" # Required for local Chrony access.
     environment:
-      - LOG_LEVEL=INFO # Standard runtime logs (recommended default for normal operation)
-        # Supported levels:
-        # - DEBUG    # Most verbose (for troubleshooting only; may enable Flask debug mode)
-        # - INFO     # Standard runtime logs (recommended default)
-        # - WARNING  # Warnings and errors only
-        # - ERROR    # Errors only
-        # - CRITICAL # Critical failures only
+      - LOG_LEVEL=INFO
+      # Enable the built-in GPSD only when INSTALL_GPSD_CLIENTS=true and a
+      # GPS device is mapped into this container.
+      # - ENABLE_GPSD=true
+      # - GPS_DEVICE=/dev/ttyACM0
+      # - GPSD_SOCKET=/var/run/gpsd.sock
     volumes:
       - ./data:/app/data # Persists UI settings
       - /run/chrony:/run/chrony # Expected host chrony path; /var/run/chrony is typically a symlink to /run/chrony
+    # Example for a USB GPS receiver:
+    # devices:
+    #   - /dev/ttyACM0:/dev/ttyACM0
     restart: unless-stopped
