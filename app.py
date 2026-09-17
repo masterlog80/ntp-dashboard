@@ -1,8 +1,6 @@
 import os, json, subprocess, tempfile, logging
-import threading
-import time
-import requests
-from flask import Flask, render_template, jsonify, request, send_from_directory
+from functools import wraps
+from flask import Flask, render_template, jsonify, request, send_from_directory, Response
 import paramiko
 from cryptography.fernet import Fernet
 
@@ -26,61 +24,62 @@ logging.getLogger('werkzeug').setLevel(LOG_LEVEL)
 
 APP_VERSION = os.environ.get("APP_VERSION", "dev")
 
-# --- Docker Hub Update Check (with caching) ---
-_update_cache = {"latest": None, "checked": 0, "error": None}
-_update_cache_lock = threading.Lock()
-DOCKERHUB_REPO = "nighthawkatl/ntp-dashboard"
-DOCKERHUB_TAGS_URL = f"https://hub.docker.com/v2/repositories/{DOCKERHUB_REPO}/tags?page_size=5&page=1&ordering=last_updated"
-_CACHE_TTL = 300  # seconds (5 minutes)
-
-def get_latest_dockerhub_tag():
-    now = time.time()
-    with _update_cache_lock:
-        if _update_cache["latest"] and now - _update_cache["checked"] < _CACHE_TTL:
-            return _update_cache["latest"], _update_cache["error"]
-        try:
-            resp = requests.get(DOCKERHUB_TAGS_URL, timeout=5)
-            resp.raise_for_status()
-            data = resp.json()
-            results = data.get("results", [])
-            if results:
-                # Find the first tag that is not 'latest'
-                tag = next((r["name"] for r in results if r["name"] != "latest"), None)
-                if tag:
-                    _update_cache["latest"] = tag
-                    _update_cache["error"] = None
-                else:
-                    tag = None
-                    _update_cache["latest"] = None
-                    _update_cache["error"] = "No versioned tags found"
-            else:
-                tag = None
-                _update_cache["latest"] = None
-                _update_cache["error"] = "No tags found"
-        except Exception as e:
-            tag = None
-            _update_cache["latest"] = None
-            _update_cache["error"] = str(e)
-        _update_cache["checked"] = now
-        return _update_cache["latest"], _update_cache["error"]
-
 # --- Directory and File Paths ---
 DATA_DIR = '/app/data'
 CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
 KEY_FILE = os.path.join(DATA_DIR, 'secret.key')
 
-os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
+try:
+    os.chmod(DATA_DIR, 0o700)
+except OSError:
+    pass
+
+# Optional HTTP Basic Authentication. Set both variables to protect the UI.
+AUTH_USER = os.environ.get("DASHBOARD_AUTH_USER", "").strip()
+AUTH_PASSWORD = os.environ.get("DASHBOARD_AUTH_PASSWORD", "")
+if bool(AUTH_USER) != bool(AUTH_PASSWORD):
+    raise RuntimeError("DASHBOARD_AUTH_USER and DASHBOARD_AUTH_PASSWORD must be set together")
+AUTH_ENABLED = bool(AUTH_USER and AUTH_PASSWORD)
+
+
+def _check_auth():
+    if not AUTH_ENABLED:
+        return True
+    auth = request.authorization
+    return bool(auth and auth.username == AUTH_USER and auth.password == AUTH_PASSWORD)
+
+
+@app.before_request
+def require_auth():
+    if request.path == "/healthz" or not AUTH_ENABLED:
+        return None
+    if _check_auth():
+        return None
+    return Response("Authentication required\\n", 401, {"WWW-Authenticate": 'Basic realm="NTP Dashboard"'})
+
 
 # --- Encryption Logic ---
 def get_cipher():
     if not os.path.exists(KEY_FILE):
         log.info('Encryption key not found; generating %s', KEY_FILE)
         key = Fernet.generate_key()
-        with open(KEY_FILE, 'wb') as key_file:
-            key_file.write(key)
+        fd = os.open(KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            with os.fdopen(fd, 'wb') as key_file:
+                key_file.write(key)
+        finally:
+            try:
+                os.chmod(KEY_FILE, 0o600)
+            except OSError:
+                pass
     else:
         with open(KEY_FILE, 'rb') as key_file:
             key = key_file.read()
+    try:
+        os.chmod(KEY_FILE, 0o600)
+    except OSError:
+        pass
     return Fernet(key)
 
 def encrypt_pwd(pwd):
@@ -111,7 +110,15 @@ def load_config():
     return {"mode": "local", "host": "", "user": "ubuntu", "password": generate_default_password(), "ssh_key": "", "enable_monitor": False}
 
 def save_config(config):
-    with open(CONFIG_FILE, 'w') as f: json.dump(config, f)
+    fd = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, 'w') as f:
+            json.dump(config, f)
+    finally:
+        try:
+            os.chmod(CONFIG_FILE, 0o600)
+        except OSError:
+            pass
     log.info('Configuration saved; mode=%r host=%r', config.get('mode'), config.get('host') or 'local')
 
 # --- Command Execution ---
@@ -132,7 +139,11 @@ def run_commands_local(cmds, timeout_seconds=5):
 
 def run_commands_remote(cmds, config, timeout_seconds=5):
     ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    known_hosts_file = os.environ.get("SSH_KNOWN_HOSTS", os.path.join(DATA_DIR, "known_hosts"))
+    ssh.load_system_host_keys()
+    if os.path.exists(known_hosts_file):
+        ssh.load_host_keys(known_hosts_file)
+    ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
     results =[]
     key_filepath = None
     
@@ -149,6 +160,7 @@ def run_commands_remote(cmds, config, timeout_seconds=5):
             if not ssh_key_str.endswith('\n'):
                 ssh_key_str += '\n'
             fd, key_filepath = tempfile.mkstemp()
+            os.chmod(key_filepath, 0o600)
             with os.fdopen(fd, 'w') as f:
                 f.write(ssh_key_str)
         
@@ -262,19 +274,6 @@ def system_metrics():
     except Exception as e:
         log.error("Failed to fetch system metrics: %s", e)
         return jsonify({"error": str(e)}), 500
-
-# --- API: Update Check (Docker Hub) ---
-@app.route('/api/update')
-def api_update():
-    latest, error = get_latest_dockerhub_tag()
-    current = APP_VERSION
-    update_available = latest and latest != current
-    return jsonify({
-        "current": current,
-        "latest": latest,
-        "update": update_available,
-        "error": error
-    })
 
 @app.route('/api/ntp')
 def get_ntp():
