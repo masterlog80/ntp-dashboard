@@ -2,6 +2,17 @@
 
 FROM python:3.13.14-alpine3.23 AS builder
 
+LABEL org.opencontainers.image.title="NTP Dashboard" \
+      org.opencontainers.image.description="A UI to check the status of NTP server" \
+      org.opencontainers.image.source="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.url="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
+      org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
+      org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="0.2" \
+      org.opencontainers.image.created="2026-09-17T08:00:00Z"
+
 WORKDIR /build
 
 # Build Python dependencies in a throw-away stage so compilers and headers
