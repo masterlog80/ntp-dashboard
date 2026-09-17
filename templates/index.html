@@ -76,169 +76,37 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
                 <div style="display:flex;align-items:center;gap:12px;min-width:0;">
                     <div style="font-size:26px;line-height:1;">⏱</div>
-                    <div style="min-width:0;">
-                        <div style="font-size:18px;font-weight:700;color:#58a6ff;">NTP Dashboard</div>
-                        <div class="muted" style="font-size:11px;">NTP / Chrony / GPS status</div>
-                    </div>
+                    <div style="min-width:0;"><div style="font-size:18px;font-weight:700;color:#58a6ff;">NTP Dashboard</div><div class="muted" style="font-size:11px;">NTP / Chrony / GPS status</div></div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
                     <div style="display:flex;gap:2px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;padding:2px;">
-                        <button id="btn-light" onclick="setThemeMode('light')" class="theme-button" title="Light mode">☀</button>
-                        <button id="btn-system" onclick="setThemeMode('system')" class="theme-button" title="System theme">▣</button>
-                        <button id="btn-dark" onclick="setThemeMode('dark')" class="theme-button" title="Dark mode">☾</button>
+                        <button id="btn-light" onclick="setThemeMode('light')" class="theme-button" title="Light mode">☀</button><button id="btn-system" onclick="setThemeMode('system')" class="theme-button" title="System theme">▣</button><button id="btn-dark" onclick="setThemeMode('dark')" class="theme-button" title="Dark mode">☾</button>
                     </div>
-                    <div style="position:relative;" id="themeDropdownWrapper">
-                        <button onclick="toggleThemeMenu(event)" class="btn">Theme ▾</button>
-                        <div id="themeMenu" class="theme-menu hidden"></div>
-                    </div>
+                    <div style="position:relative;" id="themeDropdownWrapper"><button onclick="toggleThemeMenu(event)" class="btn">Theme ▾</button><div id="themeMenu" class="theme-menu hidden"></div></div>
                     <button onclick="openSettings()" class="btn btn-primary">Connection Setup</button>
                 </div>
             </div>
         </div>
     </header>
-
     <main class="app-container">
         <section style="display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
-            <div>
-                <h1 style="margin:0;font-size:22px;">Time Synchronization</h1>
-                <div class="muted" style="margin-top:4px;">Live status from the configured NTP server and GPS receiver.</div>
-            </div>
-            <div class="mono muted" style="font-size:12px;text-align:right;">
-                <div>Local <span id="localTimeDisplay" style="color:var(--ui-text);font-weight:600;"></span></div>
-                <div>GPS <span id="gpsTimeDisplay" style="color:#58a6ff;font-weight:600;">Waiting for sync...</span></div>
-            </div>
+            <div><h1 style="margin:0;font-size:22px;">Time Synchronization</h1><div class="muted" style="margin-top:4px;">Live status from the configured NTP server and GPS receiver.</div></div>
+            <div class="mono muted" style="font-size:12px;text-align:right;"><div>Local <span id="localTimeDisplay" style="color:var(--ui-text);font-weight:600;"></span></div><div>GPS <span id="gpsTimeDisplay" style="color:#58a6ff;font-weight:600;">Waiting for sync...</span></div></div>
         </section>
-
         <section class="metric-grid" style="margin-bottom:16px;">
-            <div id="timeOffsetCard" class="card metric-span">
-                <div class="card-title">System Time Offset</div>
-                <div id="sysOffset" class="stat-value mono">Loading...</div>
-                <div class="muted" style="font-size:12px;margin-top:6px;">Chrony tracking offset</div>
-            </div>
-            <div id="connModeCard" class="card metric-span">
-                <div class="card-title">Connection Target</div>
-                <div id="connMode" class="stat-value" style="font-size:18px;color:#58a6ff;">Loading...</div>
-                <div class="muted" style="font-size:12px;margin-top:6px;">Current data source</div>
-            </div>
-            <div id="resourceMonitor" class="card metric-span hidden">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div class="card-title">Hardware Status</div>
-                    <span id="resourceStatus" class="status-dot status-idle"></span>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
-                    <div><div class="muted" style="font-size:11px;">CPU</div><div id="cpuUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
-                    <div><div class="muted" style="font-size:11px;">RAM</div><div id="ramUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
-                    <div><div class="muted" style="font-size:11px;">TEMP</div><div id="cpuTempText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div>
-                </div>
-            </div>
+            <div id="timeOffsetCard" class="card metric-span"><div class="card-title">System Time Offset</div><div id="sysOffset" class="stat-value mono">Loading...</div><div class="muted" style="font-size:12px;margin-top:6px;">Chrony tracking offset</div></div>
+            <div id="connModeCard" class="card metric-span"><div class="card-title">Connection Target</div><div id="connMode" class="stat-value" style="font-size:18px;color:#58a6ff;">Loading...</div><div class="muted" style="font-size:12px;margin-top:6px;">Current data source</div></div>
+            <div id="resourceMonitor" class="card metric-span hidden"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="card-title">Hardware Status</div><span id="resourceStatus" class="status-dot status-idle"></span></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;"><div><div class="muted" style="font-size:11px;">CPU</div><div id="cpuUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div><div><div class="muted" style="font-size:11px;">RAM</div><div id="ramUsageText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div><div><div class="muted" style="font-size:11px;">TEMP</div><div id="cpuTempText" class="mono" style="font-weight:700;margin-top:3px;">—</div></div></div></div>
         </section>
-
-        <section class="card wide-span" style="margin-bottom:16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
-                <div>
-                    <div class="card-title">NTP Sources</div>
-                    <div class="muted" style="font-size:12px;margin-top:3px;">Chrony peers and synchronization state</div>
-                </div>
-                <button onclick="openClientsModal()" class="btn">Connected Clients</button>
-            </div>
-            <div class="scroll-table">
-                <table class="data-table mono">
-                    <thead><tr><th>State</th><th>Source</th><th>Stratum</th><th>Poll</th><th>Reach</th><th>Last RX</th><th>Last Sample</th></tr></thead>
-                    <tbody id="ntpTableBody"><tr><td colspan="7" class="muted">Loading NTP sources...</td></tr></tbody>
-                </table>
-            </div>
-        </section>
-
+        <section class="card wide-span" style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;"><div><div class="card-title">NTP Sources</div><div class="muted" style="font-size:12px;margin-top:3px;">Chrony peers and synchronization state</div></div><button onclick="openClientsModal()" class="btn">Connected Clients</button></div><div class="scroll-table"><table class="data-table mono"><thead><tr><th>State</th><th>Source</th><th>Stratum</th><th>Poll</th><th>Reach</th><th>Last RX</th><th>Last Sample</th></tr></thead><tbody id="ntpTableBody"><tr><td colspan="7" class="muted">Loading NTP sources...</td></tr></tbody></table></div></section>
         <section class="metric-grid">
-            <div class="card wide-span">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                    <div><div class="card-title">GPS Sky View</div><div class="muted" style="font-size:12px;margin-top:3px;">Satellite positions and lock state</div></div>
-                    <span id="satCount" style="font-size:12px;padding:4px 9px;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-bg2);">0 Locked</span>
-                </div>
-                <div class="sky-wrap">
-                    <svg viewBox="0 0 200 200" aria-label="GPS satellite sky plot">
-                        <circle cx="100" cy="100" r="92" fill="none" stroke="#30363d" stroke-width="1"/>
-                        <circle cx="100" cy="100" r="61" fill="none" stroke="#30363d" stroke-width="1" stroke-dasharray="2 3"/>
-                        <circle cx="100" cy="100" r="31" fill="none" stroke="#30363d" stroke-width="1" stroke-dasharray="2 3"/>
-                        <line x1="8" y1="100" x2="192" y2="100" stroke="#30363d"/><line x1="100" y1="8" x2="100" y2="192" stroke="#30363d"/>
-                        <text x="100" y="16" text-anchor="middle" fill="#8b949e" font-size="7">N</text><text x="187" y="103" text-anchor="middle" fill="#8b949e" font-size="7">E</text><text x="100" y="191" text-anchor="middle" fill="#8b949e" font-size="7">S</text><text x="13" y="103" text-anchor="middle" fill="#8b949e" font-size="7">W</text>
-                        <g id="satellitesLayer"></g>
-                    </svg>
-                </div>
-                <div class="muted" style="font-size:11px;margin-top:8px;">Green satellites are currently used for the fix; red satellites are visible but not selected.</div>
-            </div>
-
-            <div class="card wide-span">
-                <div style="margin-bottom:14px;"><div class="card-title">GPS Satellites</div><div class="muted" style="font-size:12px;margin-top:3px;">Detailed receiver data</div></div>
-                <div class="scroll-table" style="max-height:330px;">
-                    <table class="data-table mono">
-                        <thead><tr><th>PRN</th><th>Elev</th><th>Azim</th><th>SNR</th><th>Status</th></tr></thead>
-                        <tbody id="satTableBody"><tr><td colspan="5" class="muted">Waiting for GPS data...</td></tr></tbody>
-                    </table>
-                </div>
-                <div id="sweepBar" style="height:3px;background:#58a6ff;width:100%;margin-top:10px;border-radius:3px;transition:width 1s linear;"></div>
-            </div>
+            <div class="card wide-span"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><div><div class="card-title">GPS Sky View</div><div class="muted" style="font-size:12px;margin-top:3px;">Satellite positions and lock state</div></div><span id="satCount" style="font-size:12px;padding:4px 9px;border:1px solid var(--ui-border);border-radius:20px;background:var(--ui-bg2);">0 Locked</span></div><div class="sky-wrap"><svg viewBox="0 0 200 200" aria-label="GPS satellite sky plot"><circle cx="100" cy="100" r="92" fill="none" stroke="#30363d"/><circle cx="100" cy="100" r="61" fill="none" stroke="#30363d" stroke-dasharray="2 3"/><circle cx="100" cy="100" r="31" fill="none" stroke="#30363d" stroke-dasharray="2 3"/><line x1="8" y1="100" x2="192" y2="100" stroke="#30363d"/><line x1="100" y1="8" x2="100" y2="192" stroke="#30363d"/><text x="100" y="16" text-anchor="middle" fill="#8b949e" font-size="7">N</text><text x="187" y="103" text-anchor="middle" fill="#8b949e" font-size="7">E</text><text x="100" y="191" text-anchor="middle" fill="#8b949e" font-size="7">S</text><text x="13" y="103" text-anchor="middle" fill="#8b949e" font-size="7">W</text><g id="satellitesLayer"></g></svg></div><div class="muted" style="font-size:11px;margin-top:8px;">Green satellites are currently used for the fix; red satellites are visible but not selected.</div></div>
+            <div class="card wide-span"><div style="margin-bottom:14px;"><div class="card-title">GPS Satellites</div><div class="muted" style="font-size:12px;margin-top:3px;">Detailed receiver data</div></div><div class="scroll-table" style="max-height:330px;"><table class="data-table mono"><thead><tr><th>PRN</th><th>Elev</th><th>Azim</th><th>SNR</th><th>Status</th></tr></thead><tbody id="satTableBody"><tr><td colspan="5" class="muted">Waiting for GPS data...</td></tr></tbody></table></div><div id="sweepBar" style="height:3px;background:#58a6ff;width:100%;margin-top:10px;border-radius:3px;transition:width 1s linear;"></div></div>
         </section>
-
-        <footer style="display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--ui-border);margin-top:24px;padding:14px 2px;color:var(--ui-muted);font-size:11px;">
-            <span>NTP Dashboard</span>
-            <span class="mono">v{{ app_version }}</span>
-        </footer>
+        <footer style="display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--ui-border);margin-top:24px;padding:14px 2px;color:var(--ui-muted);font-size:11px;"><span>NTP Dashboard</span><span class="mono">v{{ app_version }}</span></footer>
     </main>
-
-    <div id="settingsModal" class="modal-backdrop hidden">
-        <div class="modal">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-                <div><h2 style="margin:0;font-size:20px;">Connection Setup</h2><div class="muted" style="font-size:12px;margin-top:4px;">Configure local Chrony or a remote SSH target.</div></div>
-                <button type="button" onclick="closeSettings()" class="btn">✕</button>
-            </div>
-            <form id="configForm">
-                <label class="muted" style="display:block;margin-bottom:6px;">Target Mode</label>
-                <select id="mode" class="control" onchange="toggleRemote()">
-                    <option value="local">Local Host Exec (On this Server)</option>
-                    <option value="remote">Remote SSH Exec (Another Server)</option>
-                </select>
-                <div id="remoteFields" class="hidden" style="margin-top:14px;display:grid;gap:12px;">
-                    <div><label class="muted">Server IP / Host</label><input id="host" class="control" placeholder="192.168.1.10"></div>
-                    <div><label class="muted">SSH Username</label><input id="user" class="control" placeholder="ubuntu"></div>
-                    <div><label class="muted">SSH Password</label><input type="password" id="password" class="control" placeholder="Leave blank when using an SSH key"></div>
-                    <div><label class="muted">SSH Private Key</label><textarea id="ssh_key" rows="5" class="control mono" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></div>
-                </div>
-                <div style="margin-top:14px;padding:12px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;display:flex;gap:10px;align-items:flex-start;">
-                    <input type="checkbox" id="enable_monitor" style="margin-top:3px;">
-                    <label for="enable_monitor" style="cursor:pointer;"><span style="font-weight:600;">Enable Hardware Resource Monitor</span><span class="muted" style="display:block;font-size:11px;margin-top:3px;">Shows CPU, RAM and temperature for the selected target.</span></label>
-                </div>
-                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
-                    <button type="button" onclick="closeSettings()" class="btn">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save & Apply</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="clientsModal" class="modal-backdrop hidden">
-        <div class="modal" style="max-width:800px;display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
-                <div><h2 style="margin:0;font-size:20px;">Connected NTP Clients</h2><div class="muted" style="font-size:12px;margin-top:4px;">Clients reported by Chrony.</div></div>
-                <button type="button" onclick="closeClientsModal()" class="btn">✕</button>
-            </div>
-            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:10px;">
-                <label class="muted" style="font-size:11px;">Sort</label>
-                <select id="clientSort" onchange="renderClientsTable()" class="control" style="width:auto;min-width:180px;">
-                    <option value="hits_desc">Hits (High to Low)</option><option value="recent">Most Recent Activity</option><option value="ip_asc">IP Address</option>
-                </select>
-            </div>
-            <div class="scroll-table" style="max-height:55vh;">
-                <table class="data-table mono"><thead><tr><th>IP Address</th><th>NTP Hits</th><th>Dropped</th><th>Last Seen</th></tr></thead><tbody id="clientsTableBody"><tr><td colspan="4" class="muted">Loading clients...</td></tr></tbody></table>
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ui-border);">
-                <button type="button" onclick="fetchClients()" class="btn">Refresh Data</button>
-                <button type="button" onclick="closeClientsModal()" class="btn btn-primary">Close</button>
-            </div>
-        </div>
-    </div>
-
+    <div id="settingsModal" class="modal-backdrop hidden"><div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;"><div><h2 style="margin:0;font-size:20px;">Connection Setup</h2><div class="muted" style="font-size:12px;margin-top:4px;">Configure local Chrony or a remote SSH target.</div></div><button type="button" onclick="closeSettings()" class="btn">✕</button></div><form id="configForm"><label class="muted" style="display:block;margin-bottom:6px;">Target Mode</label><select id="mode" class="control" onchange="toggleRemote()"><option value="local">Local Host Exec (On this Server)</option><option value="remote">Remote SSH Exec (Another Server)</option></select><div id="remoteFields" class="hidden" style="margin-top:14px;display:grid;gap:12px;"><div><label class="muted">Server IP / Host</label><input id="host" class="control" placeholder="192.168.1.10"></div><div><label class="muted">SSH Username</label><input id="user" class="control" placeholder="ubuntu"></div><div><label class="muted">SSH Password</label><input type="password" id="password" class="control" placeholder="Leave blank when using an SSH key"></div><div><label class="muted">SSH Private Key</label><textarea id="ssh_key" rows="5" class="control mono" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></div></div><div style="margin-top:14px;padding:12px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;display:flex;gap:10px;align-items:flex-start;"><input type="checkbox" id="enable_monitor" style="margin-top:3px;"><label for="enable_monitor" style="cursor:pointer;"><span style="font-weight:600;">Enable Hardware Resource Monitor</span><span class="muted" style="display:block;font-size:11px;margin-top:3px;">Shows CPU, RAM and temperature for the selected target.</span></label></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;"><button type="button" onclick="closeSettings()" class="btn">Cancel</button><button type="submit" class="btn btn-primary">Save & Apply</button></div></form></div></div>
+    <div id="clientsModal" class="modal-backdrop hidden"><div class="modal" style="max-width:800px;display:flex;flex-direction:column;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;"><div><h2 style="margin:0;font-size:20px;">Connected NTP Clients</h2><div class="muted" style="font-size:12px;margin-top:4px;">Clients reported by Chrony.</div></div><button type="button" onclick="closeClientsModal()" class="btn">✕</button></div><div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:10px;"><label class="muted" style="font-size:11px;">Sort</label><select id="clientSort" onchange="renderClientsTable()" class="control" style="width:auto;min-width:180px;"><option value="hits_desc">Hits (High to Low)</option><option value="recent">Most Recent Activity</option><option value="ip_asc">IP Address</option></select></div><div class="scroll-table" style="max-height:55vh;"><table class="data-table mono"><thead><tr><th>IP Address</th><th>NTP Hits</th><th>Dropped</th><th>Last Seen</th></tr></thead><tbody id="clientsTableBody"><tr><td colspan="4" class="muted">Loading clients...</td></tr></tbody></table></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--ui-border);"><button type="button" onclick="fetchClients()" class="btn">Refresh Data</button><button type="button" onclick="closeClientsModal()" class="btn btn-primary">Close</button></div></div></div>
     <script src="/static/dashboard.js"></script>
-    <script src="/static/ui-refresh.js"></script>
 </body>
 </html>
