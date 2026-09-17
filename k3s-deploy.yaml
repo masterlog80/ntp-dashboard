@@ -1,16 +1,16 @@
 # NTP server + dashboard for K3s
 #
-# This deployment mirrors the Docker Compose setup:
-# - chronyd runs with the VK-172 GPS receiver and serves NTP on UDP/123.
-# - ntp-dashboard runs beside chronyd and reads the shared Chrony runtime socket.
-# - hostNetwork is intentional: it allows chronyd to serve NTP on the node's
-#   real network interfaces and exposes the dashboard on TCP/55234.
+# Mirrors the Docker Compose setup:
+# - chronyd uses the VK-172 GPS receiver and serves NTP on UDP/123.
+# - ntp-dashboard shares Chrony's /run/chrony socket.
+# - hostNetwork exposes NTP on the node's real interfaces and the dashboard
+#   on TCP/55234.
 #
 # IMPORTANT:
 # Label the K3s node physically connected to the GPS receiver:
 #   kubectl label node <node-name> ntp-gps=true
 #
-# The pod is pinned to that node so /dev/ttyACM0 is always the expected GPS.
+# The pod is pinned to that node because /dev/ttyACM0 is node-local.
 
 apiVersion: v1
 kind: Namespace
@@ -38,15 +38,12 @@ spec:
         app.kubernetes.io/name: ntp
         app.kubernetes.io/component: ntp-server
     spec:
-      # Both containers must be on the same node as the physical GPS receiver.
       nodeSelector:
         ntp-gps: "true"
 
-      # hostNetwork reproduces the Docker Compose network behaviour.
-      # chronyd therefore listens on the node's UDP/123.
+      # Equivalent to Docker Compose network_mode: host.
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-
       terminationGracePeriodSeconds: 30
 
       containers:
@@ -75,52 +72,18 @@ spec:
           volumeMounts:
             - name: chrony-run
               mountPath: /run/chrony
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
-              memory: 128Mi
-          readinessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - chronyc tracking >/dev/null 2>&1
-            initialDelaySeconds: 10
-            periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 6
-          livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - chronyc tracking >/dev/null 2>&1
-            initialDelaySeconds: 30
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
-          volumeDevices: []
+            - name: gps-device
+              mountPath: /dev/ttyACM0
           ports:
             - name: ntp
               containerPort: 123
               protocol: UDP
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-            capabilities:
-              add:
-                - SYS_TIME
           resources:
             requests:
               cpu: 10m
               memory: 32Mi
             limits:
               memory: 128Mi
-          volumeMounts:
-            - name: chrony-run
-              mountPath: /run/chrony
           startupProbe:
             exec:
               command:
@@ -130,6 +93,24 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             failureThreshold: 24
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - chronyc tracking >/dev/null 2>&1
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - chronyc tracking >/dev/null 2>&1
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
 
         - name: ntp-dashboard
           image: zot.salvetti.info/ntp-dashboard:latest
@@ -166,16 +147,21 @@ spec:
             failureThreshold: 3
 
       volumes:
-        # Shared only between the two containers in this pod.
-        # This is the K3s equivalent of the Docker named volume chrony-run.
+        # Equivalent of the Docker named volume "chrony-run".
+        # Both containers are in the same pod and share the Chrony socket.
         - name: chrony-run
           emptyDir: {}
 
         # Equivalent of:
         # /mnt/DOCKER/volumes/ntp-dashboard/data:/app/data
-        #
-        # This path must exist on the ntp-gps node.
         - name: dashboard-data
           hostPath:
             path: /mnt/DOCKER/volumes/ntp-dashboard/data
             type: DirectoryOrCreate
+
+        # Equivalent of:
+        # /dev/ttyACM0:/dev/ttyACM0
+        - name: gps-device
+          hostPath:
+            path: /dev/ttyACM0
+            type: CharDevice
