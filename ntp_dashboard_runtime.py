@@ -1,6 +1,11 @@
 """Runtime footer hook loaded before the Flask application."""
+import json
 import os
 import re
+import ssl
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from html import escape
 
@@ -20,12 +25,84 @@ def process_started_at():
                     return datetime.fromtimestamp(boot + ticks / hz, timezone.utc).isoformat(timespec="seconds")
     except Exception:
         pass
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(timezone.utc).isoformat()
+
+
+def kubernetes_pod_image():
+    """Return the image reference from the current Kubernetes Pod, if available."""
+    token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    namespace_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    ca_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+    try:
+        with open(token_path, encoding="utf-8") as f:
+            token = f.read().strip()
+        with open(namespace_path, encoding="utf-8") as f:
+            namespace = f.read().strip()
+
+        pod_name = os.environ.get("HOSTNAME", "").strip()
+        host = os.environ.get("KUBERNETES_SERVICE_HOST", "").strip()
+        port = os.environ.get("KUBERNETES_SERVICE_PORT", "443").strip()
+        if not token or not namespace or not pod_name or not host:
+            return None
+
+        url = (
+            f"https://{host}:{port}/api/v1/namespaces/"
+            f"{urllib.parse.quote(namespace, safe='')}/pods/"
+            f"{urllib.parse.quote(pod_name, safe='')}"
+        )
+        request = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        )
+
+        context = ssl.create_default_context(cafile=ca_path) if os.path.exists(ca_path) else ssl.create_default_context()
+        with urllib.request.urlopen(request, timeout=2, context=context) as response:
+            pod = json.load(response)
+
+        containers = pod.get("spec", {}).get("containers", [])
+        if not containers:
+            return None
+
+        preferred = next(
+            (c for c in containers if c.get("name") == "ntp-dashboard"),
+            containers[0],
+        )
+        return (preferred.get("image") or "").strip() or None
+    except (OSError, ValueError, KeyError, urllib.error.URLError, ssl.SSLError):
+        return None
 
 
 STARTED_AT = process_started_at()
-IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
-IMAGE_VERSION = (os.environ.get("IMAGE_VERSION") or os.environ.get("APP_VERSION") or "dev").strip() or "dev"
+
+# In Kubernetes, the manifest's image reference (for example
+# ntp-dashboard:latest) is runtime metadata and cannot be recovered from
+# Dockerfile ENV values. Prefer the Pod spec when the service-account API is
+# available, then fall back to the environment used by standalone Docker.
+K8S_IMAGE = kubernetes_pod_image()
+IMAGE_REF = K8S_IMAGE or (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
+
+
+def image_parts(image_ref):
+    image_ref = (image_ref or "").strip()
+    if not image_ref:
+        return "ntp-dashboard", "dev"
+    if "@" in image_ref:
+        name, digest = image_ref.rsplit("@", 1)
+        return name, digest
+    last = image_ref.rsplit("/", 1)[-1]
+    if ":" in last:
+        name, version = image_ref.rsplit(":", 1)
+        return name, version
+    return image_ref, "latest"
+
+
+IMAGE_NAME, IMAGE_VERSION = image_parts(IMAGE_REF)
+if not K8S_IMAGE:
+    IMAGE_VERSION = (
+        (os.environ.get("IMAGE_VERSION") or os.environ.get("APP_VERSION") or IMAGE_VERSION).strip()
+        or IMAGE_VERSION
+    )
 
 
 def install():
