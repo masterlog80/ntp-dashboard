@@ -10,6 +10,11 @@ services:
     network_mode: "host" # Required for local Chrony access.
     environment:
       - LOG_LEVEL=INFO
+      # Set both variables to enable HTTP Basic Authentication.
+      # - DASHBOARD_AUTH_USER=admin
+      # - DASHBOARD_AUTH_PASSWORD=change-me
+      # Optional SSH known_hosts file for strict host-key verification.
+      # - SSH_KNOWN_HOSTS=/app/data/known_hosts
       # Enable the built-in GPSD only when INSTALL_GPSD_CLIENTS=true and a
       # GPS device is mapped into this container.
       # - ENABLE_GPSD=true
