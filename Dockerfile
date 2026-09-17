@@ -50,6 +50,12 @@ RUN set -eux; \
 
 COPY --from=builder /install /usr/local
 
+# Install the runtime hook into Python's site-packages. A .pth file is
+# processed by Python before app.py is imported, so this works even when
+# Docker/Kubernetes explicitly starts `python app.py` and bypasses run.py.
+COPY ntp_dashboard_runtime.py /usr/local/lib/python3.13/site-packages/
+COPY ntp_dashboard_runtime.pth /usr/local/lib/python3.13/site-packages/
+
 COPY app.py ./
 COPY server.py ./
 COPY run.py ./
