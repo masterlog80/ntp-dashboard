@@ -15,8 +15,6 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
 
 WORKDIR /build
 
-# Build Python dependencies in a throw-away stage so compilers and headers
-# are not included in the final runtime image.
 RUN apk add --no-cache \
     build-base \
     libffi-dev \
@@ -28,8 +26,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade "pip==26.1.2" \
     && pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Tailwind's Play CDN is kept local for the current UI, but generated only in
-# the build stage so wget and its build-time dependencies are not retained.
 RUN mkdir -p /build/static \
     && wget -q https://cdn.tailwindcss.com/ -O /build/static/tailwindcss.js
 
@@ -39,10 +35,6 @@ WORKDIR /app
 
 ARG INSTALL_GPSD_CLIENTS=false
 
-# Runtime-only packages. Keep package versions aligned with the Alpine 3.23
-# repositories used by the pinned Python base image. Avoid apk upgrade here:
-# mixing a full upgrade with pinned packages can make builds fail when the
-# repository moves to a newer security revision.
 RUN set -eux; \
     apk add --no-cache \
         chrony \
@@ -56,18 +48,20 @@ RUN set -eux; \
         apk add --no-cache gpsd-clients; \
     fi
 
-# Install only the already-built Python dependencies from the builder.
 COPY --from=builder /install /usr/local
 
-# Copy only files required at runtime. Tests, CI configuration, documentation,
-# and other repository-only files are excluded from the image.
 COPY app.py ./
+COPY server.py ./
+COPY run.py ./
+COPY sitecustomize.py ./
 COPY templates ./templates
 COPY static ./static
 COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
 
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION} \
+    IMAGE_NAME=ntp-dashboard \
+    IMAGE_VERSION=${APP_VERSION} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -76,4 +70,4 @@ EXPOSE 55234
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:55234/', timeout=3)" || exit 1
 
-CMD ["python", "app.py"]
+CMD ["python", "run.py"]
