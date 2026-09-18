@@ -1,0 +1,58 @@
+services:
+  ntp:
+    image: simonrupf/chronyd:latest-gps
+    container_name: ntp
+    user: "0:0"
+    networks:
+      local_net:
+        ipv4_address: 192.168.10.8
+        mac_address: a2:12:e5:ed:01:ce
+    environment:
+      GPS_DEVICE: /dev/ttyACM0
+      GPS_BAUD: "9600"
+      GPS_REFCLOCK_OFFSET: "0.0"
+      GPS_PPS: "false"
+      NTP_SERVERS: "time.cloudflare.com,time.google.com,0.jp.pool.ntp.org,1.jp.pool.ntp.org"
+      ENABLE_SYSCLK: "true"
+    cap_add:
+      - SYS_TIME
+    group_add:
+      - dialout
+    sysctls:
+      net.ipv6.conf.lo.disable_ipv6: "0"
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    ports:
+      - "123:123/udp"
+    volumes:
+      - chrony-run:/run/chrony
+    restart: unless-stopped
+
+####################
+
+  ntp-dashboard:
+    image: zot.salvetti.info/ntp-dashboard:0.3
+    container_name: ntp-dashboard
+    network_mode: host
+    #environment:
+      #ENABLE_GPSD: "true"
+      #GPS_DEVICE: /dev/ttyACM0
+      #GPSD_SOCKET: /var/run/gpsd.sock
+    volumes:
+      - chrony-run:/run/chrony
+      - /mnt/DOCKER/volumes/ntp-dashboard/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - ntp
+    restart: unless-stopped
+
+####################
+
+networks:
+  local_net:
+    external: true
+
+####################
+
+volumes:
+  chrony-run:
