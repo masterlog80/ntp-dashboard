@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import socket
 import ssl
 import urllib.error
 import urllib.parse
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 from html import escape
 
 FOOTER_RE = re.compile(r'<footer(?:\s+[^>]*)?class=["\']app-footer["\'][^>]*>.*?</footer>', re.DOTALL)
+SA_DIR = "/var/run/secrets/kubernetes.io/serviceaccount"
 
 
 def process_started_at():
@@ -28,24 +30,71 @@ def process_started_at():
     return datetime.now(timezone.utc).isoformat()
 
 
-def kubernetes_pod_image():
-    """Return the image reference from the current Kubernetes Pod, if available."""
-    token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-    namespace_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-    ca_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+def docker_request(path):
+    """Read a Docker Engine API endpoint through the optional local Unix socket."""
+    socket_path = "/var/run/docker.sock"
+    if not os.path.exists(socket_path):
+        return None
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(2)
+    try:
+        sock.connect(socket_path)
+        sock.sendall(
+            f"GET {path} HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n".encode()
+        )
+        chunks = []
+        while True:
+            chunk = sock.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        raw = b"".join(chunks)
+        header, _, body = raw.partition(b"\r\n\r\n")
+        status = header.split(b"\r\n", 1)[0] if header else b""
+        if not status.startswith(b"HTTP/") or b" 200 " not in status:
+            return None
+        return json.loads(body.decode("utf-8"))
+    except Exception:
+        return None
+    finally:
+        sock.close()
+
+
+def container_id():
+    """Find the Docker container ID from HOSTNAME or cgroup metadata."""
+    hostname = os.environ.get("HOSTNAME", "").strip()
+    if len(hostname) >= 12 and all(c in "0123456789abcdef" for c in hostname.lower()):
+        return hostname
+    try:
+        with open("/proc/self/cgroup", encoding="utf-8") as f:
+            for line in f:
+                for part in line.strip().split("/"):
+                    if len(part) >= 12 and all(c in "0123456789abcdef" for c in part.lower()):
+                        return part[:64]
+    except Exception:
+        pass
+    return None
+
+
+def kubernetes_pod():
+    """Return the current Pod object when the Kubernetes API is available."""
+    token_file = os.path.join(SA_DIR, "token")
+    namespace_file = os.path.join(SA_DIR, "namespace")
+    ca_file = os.path.join(SA_DIR, "ca.crt")
+    pod_name = os.environ.get("HOSTNAME", "").strip()
+    if not pod_name or not all(os.path.exists(p) for p in (token_file, namespace_file, ca_file)):
+        return None
 
     try:
-        with open(token_path, encoding="utf-8") as f:
+        with open(token_file, encoding="utf-8") as f:
             token = f.read().strip()
-        with open(namespace_path, encoding="utf-8") as f:
+        with open(namespace_file, encoding="utf-8") as f:
             namespace = f.read().strip()
+        with open(ca_file, "rb") as f:
+            ca_data = f.read()
 
-        pod_name = os.environ.get("HOSTNAME", "").strip()
-        host = os.environ.get("KUBERNETES_SERVICE_HOST", "").strip()
-        port = os.environ.get("KUBERNETES_SERVICE_PORT", "443").strip()
-        if not token or not namespace or not pod_name or not host:
-            return None
-
+        host = os.environ.get("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+        port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
         url = (
             f"https://{host}:{port}/api/v1/namespaces/"
             f"{urllib.parse.quote(namespace, safe='')}/pods/"
@@ -55,75 +104,37 @@ def kubernetes_pod_image():
             url,
             headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
         )
-
-        context = ssl.create_default_context(cafile=ca_path) if os.path.exists(ca_path) else ssl.create_default_context()
-        with urllib.request.urlopen(request, timeout=2, context=context) as response:
-            pod = json.load(response)
-
-        containers = pod.get("spec", {}).get("containers", [])
-        if not containers:
-            return None
-
-        preferred = next(
-            (c for c in containers if c.get("name") == "ntp-dashboard"),
-            containers[0],
-        )
-        return (preferred.get("image") or "").strip() or None
-    except (OSError, ValueError, KeyError, urllib.error.URLError, ssl.SSLError):
+        context = ssl.create_default_context(cadata=ca_data.decode("utf-8"))
+        with urllib.request.urlopen(request, timeout=3, context=context) as response:
+            return json.load(response)
+    except Exception:
         return None
 
 
-def version_file_image():
-    """Return the build-time image version written into /app/.version."""
-    try:
-        with open("/app/.version", encoding="utf-8") as f:
-            version = f.read().strip()
-        if version:
-            return version
-    except OSError:
-        pass
+def detect_image_ref():
+    """Return the exact image reference, preferring Docker then Kubernetes."""
+    cid = container_id()
+    if cid:
+        container = docker_request(f"/containers/{cid}/json")
+        if container:
+            raw = (container.get("Config") or {}).get("Image")
+            if raw:
+                return raw.strip()
+
+    pod = kubernetes_pod()
+    if pod:
+        containers = pod.get("spec", {}).get("containers") or []
+        for container in containers:
+            if container.get("name") == "ntp-dashboard" and container.get("image"):
+                return container["image"].strip()
+        if containers and containers[0].get("image"):
+            return containers[0]["image"].strip()
+
     return None
 
 
 STARTED_AT = process_started_at()
-
-# Follow the same reliable strategy used by hls-proxy:
-#   1. build-time /app/.version (works in ordinary Docker without privileges)
-#   2. Kubernetes Pod image (when running under Kubernetes)
-#   3. environment fallback
-#
-# The version file is deliberately checked first because a normal Docker
-# container cannot see the tag it was started from unless the Docker socket is
-# mounted. The Dockerfile creates the file from APP_VERSION and defaults it to
-# "latest", which matches the normal ntp-dashboard:latest image.
-FILE_VERSION = version_file_image()
-K8S_IMAGE = kubernetes_pod_image()
-
-if FILE_VERSION:
-    IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
-    IMAGE_VERSION = FILE_VERSION
-elif K8S_IMAGE:
-    def image_parts(image_ref):
-        image_ref = (image_ref or "").strip()
-        if not image_ref:
-            return "ntp-dashboard", "latest"
-        if "@" in image_ref:
-            name, digest = image_ref.rsplit("@", 1)
-            return name, digest
-        last = image_ref.rsplit("/", 1)[-1]
-        if ":" in last:
-            name, version = image_ref.rsplit(":", 1)
-            return name, version
-        return image_ref, "latest"
-
-    IMAGE_NAME, IMAGE_VERSION = image_parts(K8S_IMAGE)
-else:
-    IMAGE_NAME = (os.environ.get("IMAGE_NAME") or "ntp-dashboard").strip() or "ntp-dashboard"
-    IMAGE_VERSION = (
-        os.environ.get("IMAGE_VERSION")
-        or os.environ.get("APP_VERSION")
-        or "latest"
-    ).strip() or "latest"
+IMAGE_REF = detect_image_ref() or os.environ.get("IMAGE_REF") or "ntp-dashboard:unknown"
 
 
 def install():
@@ -158,7 +169,7 @@ def install():
                     + escape(STARTED_AT)
                     + '</span></span></div>'
                     '<span class="footer-image">'
-                    + escape(f"{IMAGE_NAME}:{IMAGE_VERSION}")
+                    + escape(IMAGE_REF)
                     + '</span></footer>'
                 )
                 document = document[:match.start()] + footer + document[match.end():]
