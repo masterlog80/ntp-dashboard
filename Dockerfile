@@ -63,7 +63,7 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
       org.opencontainers.image.url="https://github.com/masterlog80/ntp-dashboard" \
       org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="${APP_VERSION}"
+      org.opencontainers.image.version="0.2"
 
 EXPOSE 55234
 
