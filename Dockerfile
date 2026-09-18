@@ -20,7 +20,7 @@ FROM python:3.13.14-alpine3.23
 WORKDIR /app
 
 ARG INSTALL_GPSD_CLIENTS=true
-ARG APP_VERSION=latest
+ARG APP_VERSION=0.2
 
 RUN set -eux; \
     apk add --no-cache \
@@ -65,7 +65,7 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
       org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
       org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="0.2" \
+      org.opencontainers.image.version="${APP_VERSION}" \
       org.opencontainers.image.created="2026-09-18T00:10:00Z"
 
 EXPOSE 55234
