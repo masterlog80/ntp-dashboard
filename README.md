@@ -65,7 +65,7 @@ export GH_TOKEN
 bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubusercontent.com/masterlog80/homelab-scripts/main/clone-build.sh)"
 ```
 
-The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment.
+The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment. The image tag itself is not exposed to a running Docker container, so the build must embed the version with `APP_VERSION`; the Dockerfile defaults this to the current `0.2` release.
 
 ### Run manually
 
@@ -288,7 +288,7 @@ The check runs every 30 seconds, with a 10-second startup grace period and three
 |---|---|---|
 | `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
 | `DEBUG_MODE` | unset | Set to `true` to explicitly enable Flask debug mode; do not use in production |
-| `APP_VERSION` | `dev` | Version displayed by the application; normally supplied by the image/build workflow |
+| `APP_VERSION` | `0.2` (build-time) | Version embedded in the image and displayed by the application. Set this to the release/tag when building another version. |
 | `DASHBOARD_AUTH_USER` | unset | Username for HTTP Basic Authentication; enabled when both auth variables are set |
 | `DASHBOARD_AUTH_PASSWORD` | unset | Password for HTTP Basic Authentication |
 | `SSH_KNOWN_HOSTS` | `/app/data/known_hosts` | Trusted SSH host-key file used for strict remote host verification |
@@ -297,7 +297,7 @@ The check runs every 30 seconds, with a 10-second startup grace period and three
 
 | Argument | Default | Description |
 |---|---|---|
-| `INSTALL_GPSD_CLIENTS` | `false` | Set to `true` to install Alpine `gpsd-clients` for local `gpspipe` support |
+| `APP_VERSION` | `0.2` | Version embedded in `/app/.version` and the OCI image metadata. Set this to the image tag when building another release. |\n| `INSTALL_GPSD_CLIENTS` | `false` | Set to `true` to install Alpine `gpsd-clients` for local `gpspipe` support |
 
 The following paths are currently fixed by the application:
 
