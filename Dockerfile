@@ -15,9 +15,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade "pip==26.1.2" \
     && pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-RUN mkdir -p /build/static \
-    && wget -q https://cdn.tailwindcss.com/ -O /build/static/tailwindcss.js
-
 FROM python:3.13.14-alpine3.23
 
 WORKDIR /app
@@ -53,7 +50,6 @@ COPY sitecustomize.py ./
 COPY docker-entrypoint.sh ./
 COPY templates ./templates
 COPY static ./static
-COPY --from=builder /build/static/tailwindcss.js ./static/tailwindcss.js
 
 ENV APP_VERSION=${APP_VERSION} \
     IMAGE_NAME=ntp-dashboard \
@@ -66,10 +62,8 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
       org.opencontainers.image.source="https://github.com/masterlog80/ntp-dashboard" \
       org.opencontainers.image.url="https://github.com/masterlog80/ntp-dashboard" \
       org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
-      org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
-      org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="${APP_VERSION}"
+      org.opencontainers.image.version="0.2"
 
 EXPOSE 55234
 

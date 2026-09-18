@@ -19,6 +19,7 @@ The dashboard is designed for homelab and local NTP deployments, including GPS/P
 - 🎨 **Theme customization** – Light/dark UI with a browser-side colour picker; preferences are kept locally in the browser
 - 📱 **Progressive Web App** – Includes a web app manifest and service worker
 - 🔄 **Automatic refresh** – NTP source data refreshes every 2 seconds; GPS/satellite data refreshes every 30 seconds
+- 🔐 **Optional HTTP authentication** – Protect the dashboard with HTTP Basic Authentication using environment variables
 - 📦 **Optional GPS client support** – The container can be built with `gpsd-clients` when local `gpspipe` access is required
 - 🏷️ **Version display** – The application version can be supplied at build/runtime and is displayed by the UI
 - 🩺 **Container health check** – Docker checks the web UI on port `55234`
@@ -82,6 +83,8 @@ The dashboard will be available at:
 ```text
 http://<docker-host>:55234
 ```
+
+For a protected deployment, set `DASHBOARD_AUTH_USER` and `DASHBOARD_AUTH_PASSWORD` in the container environment. Both must be set together.
 
 ### Uninstall
 
@@ -269,10 +272,10 @@ The application listens on **port `55234`**.
 
 ### Container health check
 
-The image includes a Docker health check against:
+The image includes a Docker health check against the unauthenticated `/healthz` endpoint:
 
 ```text
-http://127.0.0.1:55234/
+http://127.0.0.1:55234/healthz
 ```
 
 The check runs every 30 seconds, with a 10-second startup grace period and three retries.
@@ -286,6 +289,9 @@ The check runs every 30 seconds, with a 10-second startup grace period and three
 | `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
 | `DEBUG_MODE` | unset | Set to `true` to explicitly enable Flask debug mode; do not use in production |
 | `APP_VERSION` | `dev` | Version displayed by the application; normally supplied by the image/build workflow |
+| `DASHBOARD_AUTH_USER` | unset | Username for HTTP Basic Authentication; enabled when both auth variables are set |
+| `DASHBOARD_AUTH_PASSWORD` | unset | Password for HTTP Basic Authentication |
+| `SSH_KNOWN_HOSTS` | `/app/data/known_hosts` | Trusted SSH host-key file used for strict remote host verification |
 
 ### Build arguments
 
@@ -321,9 +327,9 @@ The encryption key is generated automatically on first use and is stored beside 
 
 ## Security Notes
 
-- **Protect the dashboard:** The application does not provide user authentication. Do not expose port `55234` to untrusted networks without placing it behind an appropriate authentication/access-control layer.
-- **Protect `data/`:** `config.json` contains encrypted credentials, while `secret.key` is required to decrypt them. Protect both files and the host directory containing them.
-- **SSH host keys:** Remote connections currently use Paramiko's `AutoAddPolicy`, so the SSH host key is automatically accepted rather than being validated against a pre-existing `known_hosts` file. Use the dashboard only with trusted remote endpoints and networks.
+- **Protect the dashboard:** HTTP Basic Authentication is available through `DASHBOARD_AUTH_USER` and `DASHBOARD_AUTH_PASSWORD`. For deployments exposed beyond a trusted LAN, enable it or place the dashboard behind an equivalent authentication/access-control layer.
+- **Protect `data/`:** `config.json` contains encrypted credentials, while `secret.key` is required to decrypt them. The application creates the data directory as `0700` and these credential files as `0600`; also protect the host directory containing them.
+- **SSH host keys:** Remote connections use strict host-key verification. Mount a trusted `known_hosts` file (default: `/app/data/known_hosts`, configurable with `SSH_KNOWN_HOSTS`) before using Remote mode. Unknown hosts are rejected rather than automatically trusted.
 - **Remote command privileges:** Remote commands are executed using the configured SSH account. The connected account must have sufficient permissions to run the required Chrony/GPS commands. The Clients query may require Chrony command authorisation or `sudo` depending on the target configuration.
 - **Debug mode:** Do not enable `DEBUG_MODE=true` on an exposed production deployment. Debug mode can expose detailed errors and tracebacks.
 - **Host networking:** Local mode uses `network_mode: host`, which gives the container direct access to the host network namespace. This is required by the current local Chrony design.
@@ -442,7 +448,6 @@ The dashboard exposes the following read/write endpoints for its web UI:
 | `GET` | `/api/gps` | GPS time and satellite data |
 | `GET` | `/api/clients` | Connected NTP clients |
 | `GET` | `/api/system_metrics` | Optional CPU, RAM, and temperature metrics |
-| `GET` | `/api/update` | Docker Hub update information |
 | `GET` | `/api/config` | Current connection configuration with secrets redacted |
 | `POST` | `/api/config` | Save connection configuration |
 | `GET` | `/manifest.json` | PWA manifest |
