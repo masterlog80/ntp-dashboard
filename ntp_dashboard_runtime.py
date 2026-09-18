@@ -60,19 +60,25 @@ def docker_request(path):
         sock.close()
 
 
-def container_id():
-    """Find the Docker container ID from HOSTNAME or cgroup metadata."""
+def docker_container():
+    """Find the current Docker container through its ID or Compose name."""
     hostname = os.environ.get("HOSTNAME", "").strip()
-    if len(hostname) >= 12 and all(c in "0123456789abcdef" for c in hostname.lower()):
-        return hostname
-    try:
-        with open("/proc/self/cgroup", encoding="utf-8") as f:
-            for line in f:
-                for part in line.strip().split("/"):
-                    if len(part) >= 12 and all(c in "0123456789abcdef" for c in part.lower()):
-                        return part[:64]
-    except Exception:
-        pass
+    candidates = [hostname] if hostname else []
+    candidates.append("ntp-dashboard")
+
+    for candidate in candidates:
+        container = docker_request(f"/containers/{urllib.parse.quote(candidate, safe='')}/json")
+        if container:
+            return container
+
+    # Fallback for runtimes where HOSTNAME/cgroup metadata is not a Docker ID.
+    containers = docker_request("/containers/json?all=0")
+    if isinstance(containers, list):
+        for item in containers:
+            if "/ntp-dashboard" in (item.get("Names") or []):
+                cid = item.get("Id")
+                if cid:
+                    return docker_request(f"/containers/{urllib.parse.quote(cid, safe='')}/json")
     return None
 
 
@@ -113,10 +119,8 @@ def kubernetes_pod():
 
 def detect_image_ref():
     """Return the exact image reference, preferring Docker then Kubernetes."""
-    cid = container_id()
-    if cid:
-        container = docker_request(f"/containers/{cid}/json")
-        if container:
+    container = docker_container()
+    if container:
             raw = (container.get("Config") or {}).get("Image")
             if raw:
                 return raw.strip()
