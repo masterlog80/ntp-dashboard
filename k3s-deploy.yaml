@@ -73,6 +73,7 @@ spec:
         ntp-gps: "true"
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
 
       containers:
@@ -169,6 +170,9 @@ spec:
               mountPath: /run/chrony
             - name: dashboard-data
               mountPath: /app/data
+            - name: k8s-api
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
           ports:
             - name: http
               containerPort: 55234
@@ -203,3 +207,22 @@ spec:
           hostPath:
             path: /dev/ttyACM0
             type: CharDevice
+
+        # Mount the ServiceAccount token only into the dashboard container.
+        # This keeps the chrony container from receiving Kubernetes credentials.
+        - name: k8s-api
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        fieldPath: metadata.namespace
