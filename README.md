@@ -21,7 +21,7 @@ The dashboard is designed for homelab and local NTP deployments, including GPS/P
 - 🔄 **Automatic refresh** – NTP source data refreshes every 2 seconds; GPS/satellite data refreshes every 30 seconds
 - 🔐 **Optional HTTP authentication** – Protect the dashboard with HTTP Basic Authentication using environment variables
 - 📦 **Optional GPS client support** – The container can be built with `gpsd-clients` when local `gpspipe` access is required
-- 🏷️ **Version display** – The application version can be supplied at build/runtime and is displayed by the UI
+- 🏷️ **Version display** – The UI displays the exact image reference detected from the running container or Pod
 - 🩺 **Container health check** – Docker checks the web UI on port `55234`
 
 ---
@@ -65,7 +65,7 @@ export GH_TOKEN
 bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubusercontent.com/masterlog80/homelab-scripts/main/clone-build.sh)"
 ```
 
-The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment.
+The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment. The dashboard detects its exact runtime image reference automatically: Docker uses the Docker Engine API when `/var/run/docker.sock` is mounted, while K3s/Kubernetes uses the Pod API with a namespace-scoped `get` permission. No image version is hardcoded into the image.
 
 ### Run manually
 
@@ -129,6 +129,8 @@ services:
     volumes:
       - ./data:/app/data
       - /run/chrony:/run/chrony
+      # Optional: detect the exact Docker image reference shown in the footer.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
 ```
 
@@ -288,7 +290,6 @@ The check runs every 30 seconds, with a 10-second startup grace period and three
 |---|---|---|
 | `LOG_LEVEL` | `INFO` | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |
 | `DEBUG_MODE` | unset | Set to `true` to explicitly enable Flask debug mode; do not use in production |
-| `APP_VERSION` | `dev` | Version displayed by the application; normally supplied by the image/build workflow |
 | `DASHBOARD_AUTH_USER` | unset | Username for HTTP Basic Authentication; enabled when both auth variables are set |
 | `DASHBOARD_AUTH_PASSWORD` | unset | Password for HTTP Basic Authentication |
 | `SSH_KNOWN_HOSTS` | `/app/data/known_hosts` | Trusted SSH host-key file used for strict remote host verification |
@@ -297,7 +298,7 @@ The check runs every 30 seconds, with a 10-second startup grace period and three
 
 | Argument | Default | Description |
 |---|---|---|
-| `INSTALL_GPSD_CLIENTS` | `false` | Set to `true` to install Alpine `gpsd-clients` for local `gpspipe` support |
+| `APP_VERSION` | `0.2` | Version embedded in `/app/.version` and the OCI image metadata. Set this to the image tag when building another release. |\n| `INSTALL_GPSD_CLIENTS` | `false` | Set to `true` to install Alpine `gpsd-clients` for local `gpspipe` support |
 
 The following paths are currently fixed by the application:
 
@@ -547,7 +548,7 @@ The repository's GitHub Actions workflow builds the image, reports its uncompres
 
 ## Versioning
 
-The application reads its version from the `APP_VERSION` environment variable, defaulting to `dev` when no version is supplied.
+The application detects the exact image reference from the runtime environment. Docker deployments use the Docker Engine API when its socket is mounted; K3s/Kubernetes deployments query the current Pod through a namespace-scoped ServiceAccount. `IMAGE_REF` can be supplied as an explicit fallback when neither runtime API is available.
 
 Git tags beginning with `v` are used by the release workflow to create GitHub Releases. For example:
 
@@ -556,7 +557,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-When publishing an image, supply the corresponding version as `APP_VERSION` so the UI can identify the deployed build.
+The footer therefore follows the image actually running, for example `zot.salvetti.info/ntp-dashboard:0.2.1`, without changing the Dockerfile for each release.
 
 ---
 

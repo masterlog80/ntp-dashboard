@@ -20,7 +20,6 @@ FROM python:3.13.14-alpine3.23
 WORKDIR /app
 
 ARG INSTALL_GPSD_CLIENTS=true
-ARG APP_VERSION=latest
 
 RUN set -eux; \
     apk add --no-cache \
@@ -37,8 +36,6 @@ RUN set -eux; \
 
 COPY --from=builder /install /usr/local
 
-RUN printf '%s\n' "$APP_VERSION" > /app/.version
-
 COPY ntp_dashboard_runtime.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_favicon.py /usr/local/lib/python3.13/site-packages/
 COPY ntp_dashboard_runtime.pth /usr/local/lib/python3.13/site-packages/
@@ -51,10 +48,7 @@ COPY docker-entrypoint.sh ./
 COPY templates ./templates
 COPY static ./static
 
-ENV APP_VERSION=${APP_VERSION} \
-    IMAGE_NAME=ntp-dashboard \
-    IMAGE_VERSION=${APP_VERSION} \
-    PYTHONDONTWRITEBYTECODE=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 LABEL org.opencontainers.image.title="NTP Dashboard" \
@@ -64,9 +58,8 @@ LABEL org.opencontainers.image.title="NTP Dashboard" \
       org.opencontainers.image.documentation="https://github.com/masterlog80/ntp-dashboard" \
       org.opencontainers.image.authors="Lorenzo (via Github Copilot/Claude)" \
       org.opencontainers.image.vendor="Lorenzo (via Github Copilot/Claude)" \
-      org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="0.2" \
-      org.opencontainers.image.created="2026-09-18T00:10:00Z"
+      org.opencontainers.image.licenses="MIT"
 
 EXPOSE 55234
 
