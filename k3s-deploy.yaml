@@ -17,6 +17,36 @@ kind: Namespace
 metadata:
   name: ntp
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ntp-dashboard
+  namespace: ntp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ntp-dashboard
+  namespace: ntp
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ntp-dashboard
+  namespace: ntp
+subjects:
+  - kind: ServiceAccount
+    name: ntp-dashboard
+    namespace: ntp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ntp-dashboard
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,13 +68,11 @@ spec:
         app.kubernetes.io/name: ntp
         app.kubernetes.io/component: ntp-server
     spec:
+      serviceAccountName: ntp-dashboard
       nodeSelector:
         ntp-gps: "true"
-
-      # Equivalent to Docker Compose network_mode: host.
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
-      automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
 
       containers:
@@ -165,20 +193,12 @@ spec:
             failureThreshold: 3
 
       volumes:
-        # Equivalent of the Docker named volume "chrony-run".
-        # Both containers are in the same pod and share the Chrony socket.
         - name: chrony-run
           emptyDir: {}
-
-        # Equivalent of:
-        # /mnt/DOCKER/volumes/ntp-dashboard/data:/app/data
         - name: dashboard-data
           hostPath:
             path: /mnt/DOCKER/volumes/ntp-dashboard/data
             type: DirectoryOrCreate
-
-        # Equivalent of:
-        # /dev/ttyACM0:/dev/ttyACM0
         - name: gps-device
           hostPath:
             path: /dev/ttyACM0
