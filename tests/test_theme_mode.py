@@ -8,21 +8,21 @@ def test_theme_mode_is_implemented_in_dashboard_js():
     source = (ROOT / "static" / "dashboard.js").read_text(encoding="utf-8")
     assert "function setThemeMode(mode)" in source
     assert "function initThemeMode()" in source
-    assert "root.dataset.colorMode = mode" in source
-    assert "localStorage.themeMode" in source
-    assert "prefers-color-scheme: dark" in source
+    assert "root.dataset.colorMode = theme" in source
+    assert "ntp-dashboard-theme" in source
+    assert "btnTheme" in source
 
 
-def test_theme_mode_palettes_are_in_template():
+def test_theme_toggle_is_in_template():
     source = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
     assert '<html lang="en">' in source
     assert 'html[data-color-mode="light"]' in source
     assert 'html[data-color-mode="dark"]' in source
-    assert 'html[data-color-mode="system"]' in source
-    assert 'prefers-color-scheme: light' in source
-    assert 'id="btn-light"' in source
-    assert 'id="btn-system"' in source
-    assert 'id="btn-dark"' in source
+    assert 'id="btnTheme"' in source
+    assert 'id="btn-light"' not in source
+    assert 'id="btn-system"' not in source
+    assert 'id="btn-dark"' not in source
+    assert '>Theme ▾<' not in source
 
 
 def test_theme_injection_module_is_not_used():
