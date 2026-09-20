@@ -67,7 +67,13 @@ function formatLocal(date) {
         hour12: false, timeZoneName: 'short'
     });
     const parts = formatter.formatToParts(date);
-    const timeZone = parts.find(part => part.type === 'timeZoneName')?.value || 'LOCAL';
+    let timeZone = parts.find(part => part.type === 'timeZoneName')?.value || 'LOCAL';
+
+    // Use the conventional JST abbreviation when the browser is configured for Japan.
+    if (formatter.resolvedOptions().timeZone === 'Asia/Tokyo') {
+        timeZone = 'JST';
+    }
+
     return formatDateTimeParts(date, formatter, timeZone);
 }
 function formatUTC(date) {
