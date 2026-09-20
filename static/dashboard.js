@@ -9,39 +9,94 @@ const state = {
     lastRefresh: 0
 };
 
-const THEME_KEY = 'ntp-dashboard-theme';
+const themes = [
+    ['blue','Default Blue','#58a6ff'], ['emerald','Emerald Green','#10b981'], ['rose','Rose Red','#f43f5e'],
+    ['orange','Sunset Orange','#f97316'], ['amber','Amber Yellow','#f59e0b'], ['violet','Violet Purple','#8b5cf6'],
+    ['midnight','Slate','#64748b'], ['cyan','Cyan','#06b6d4'], ['fuchsia','Fuchsia','#d946ef'],
+    ['lime','Lime','#84cc16'], ['indigo','Indigo','#6366f1'], ['teal','Teal','#14b8a6']
+];
 
-function applyTheme(theme, persist = true) {
-    if (!['light', 'dark'].includes(theme)) theme = 'dark';
-    const root = document.documentElement;
-    root.dataset.colorMode = theme;
-    const button = document.getElementById('btnTheme');
-    if (button) {
-        button.textContent = theme === 'dark' ? '☀' : '☾';
-        button.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-        button.setAttribute('aria-label', button.title);
-    }
+function applyThemeMode(mode, persist = true) {
+    if (!['light','system','dark'].includes(mode)) mode = 'system';
     if (persist) {
-        try { localStorage.setItem(THEME_KEY, theme); } catch (_) {}
+        try { localStorage.themeMode = mode; } catch (_) {}
     }
+
+    const root = document.documentElement;
+    root.dataset.colorMode = mode;
+
+    ['light','system','dark'].forEach(id => {
+        const button = document.getElementById(`btn-${id}`);
+        if (button) button.setAttribute('aria-pressed', id === mode ? 'true' : 'false');
+    });
+
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = theme === 'light' ? '#ffffff' : '#0d1117';
+    if (meta) {
+        const light = mode === 'light' ||
+            (mode === 'system' && window.matchMedia &&
+             window.matchMedia('(prefers-color-scheme: light)').matches);
+        meta.content = light ? '#ffffff' : '#1c2431';
+    }
 }
 
 function setThemeMode(mode) {
-    applyTheme(mode, true);
+    applyThemeMode(mode, true);
 }
 
 function initThemeMode() {
-    let theme = 'dark';
-    try { theme = localStorage.getItem(THEME_KEY) || 'dark'; } catch (_) {}
-    applyTheme(theme, false);
-    const button = document.getElementById('btnTheme');
-    if (button) button.addEventListener('click', () => {
-        const current = document.documentElement.dataset.colorMode;
-        applyTheme(current === 'dark' ? 'light' : 'dark', true);
-    });
+    let mode = 'system';
+    try {
+        if (['light','system','dark'].includes(localStorage.themeMode)) {
+            mode = localStorage.themeMode;
+        }
+    } catch (_) {}
+
+    applyThemeMode(mode, false);
+
+    if (window.matchMedia) {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => {
+            let current = 'system';
+            try { current = localStorage.themeMode || 'system'; } catch (_) {}
+            if (current === 'system') applyThemeMode('system', false);
+        };
+        if (media.addEventListener) media.addEventListener('change', handleChange);
+        else if (media.addListener) media.addListener(handleChange);
+    }
 }
+
+function applyColorPalette(id) {
+    localStorage.themeColor = id;
+    document.documentElement.dataset.theme = id;
+    const item = themes.find(t => t[0] === id);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && item) meta.content = item[2];
+    renderThemeMenu();
+}
+
+function renderThemeMenu() {
+    const menu = document.getElementById('themeMenu');
+    if (!menu) return;
+    const current = localStorage.themeColor || 'blue';
+    menu.innerHTML = themes.map(([id,name,color]) => `
+        <button type="button" onclick="applyColorPalette('${id}')">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:9px;"></span>${name}
+            ${id === current ? '<span style="float:right;color:#58a6ff;">✓</span>' : ''}
+        </button>`).join('');
+}
+
+function toggleThemeMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('themeMenu');
+    if (menu) menu.classList.toggle('hidden');
+    renderThemeMenu();
+}
+
+document.addEventListener('click', event => {
+    const wrapper = document.getElementById('themeDropdownWrapper');
+    const menu = document.getElementById('themeMenu');
+    if (wrapper && menu && !wrapper.contains(event.target)) menu.classList.add('hidden');
+});
 
 function openSettings() { document.getElementById('settingsModal')?.classList.remove('hidden'); }
 function closeSettings() { document.getElementById('settingsModal')?.classList.add('hidden'); }
@@ -244,6 +299,7 @@ window.addEventListener('online', refreshNow);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshNow(); });
 
 initThemeMode();
+applyColorPalette(localStorage.themeColor || 'blue');
 loadUI();
 refreshNow();
 startPolling();
