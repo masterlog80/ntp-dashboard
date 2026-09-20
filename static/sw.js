@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ntp-dash-v3';
+const CACHE_NAME = 'ntp-dash-v4';
 const ASSETS_TO_CACHE =[
     '/',
     '/static/tailwindcss.js',
@@ -59,7 +59,26 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Stale-while-revalidate for static assets keeps app responsive while refreshing cache in background.
+    // dashboard.js contains application logic and must not be served stale after a deployment.
+    // Use network-first so a newly deployed formatter is picked up immediately.
+    if (url.pathname === '/static/dashboard.js') {
+        event.respondWith(
+            fetch(new Request(event.request, { cache: 'no-store' }))
+                .then(response => {
+                    if (response && response.ok) {
+                        const responseCopy = response.clone();
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseCopy))
+                        );
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Stale-while-revalidate for other static assets keeps the app responsive while refreshing cache in background.
     if (url.pathname.startsWith('/static/') || url.pathname === '/manifest.json') {
         event.respondWith(
             caches.match(event.request).then(cached => {
@@ -84,7 +103,7 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
-    
+
     // Fallback strategy for any other same-origin GET request.
     event.respondWith(
         fetch(event.request).catch(() => {

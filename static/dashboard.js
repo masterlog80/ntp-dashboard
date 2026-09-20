@@ -52,12 +52,38 @@ function toggleRemote() {
     document.getElementById('remoteFields')?.classList.toggle('hidden', !remote);
 }
 
+function formatDateTimeParts(date, parts, timeZoneLabel) {
+    const values = {};
+    for (const part of parts.formatToParts(date)) {
+        if (part.type !== 'literal') values[part.type] = part.value;
+    }
+    return values.day + '-' + values.month + '-' + values.year + ' ' + values.hour + ':' + values.minute + ':' + values.second + '.' + String(date.getMilliseconds()).padStart(3, '0') + ' ' + timeZoneLabel;
+}
+
 function formatLocal(date) {
-    return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {hour12:true})}.${String(date.getMilliseconds()).padStart(3,'0')}`;
+    const formatter = new Intl.DateTimeFormat(undefined, {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false, timeZoneName: 'short'
+    });
+    const parts = formatter.formatToParts(date);
+    let timeZone = parts.find(part => part.type === 'timeZoneName')?.value || 'LOCAL';
+
+    // Use the conventional JST abbreviation when the browser is configured for Japan.
+    if (formatter.resolvedOptions().timeZone === 'Asia/Tokyo') {
+        timeZone = 'JST';
+    }
+
+    return formatDateTimeParts(date, formatter, timeZone);
 }
 function formatUTC(date) {
-    const p = n => String(n).padStart(2,'0');
-    return `${date.getUTCFullYear()}-${p(date.getUTCMonth()+1)}-${p(date.getUTCDate())}, ${p(date.getUTCHours())}:${p(date.getUTCMinutes())}:${p(date.getUTCSeconds())}.${String(date.getUTCMilliseconds()).padStart(3,'0')} UTC`;
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'UTC',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    return formatDateTimeParts(date, formatter, 'UTC');
 }
 function updateClock() {
     const now = new Date();
