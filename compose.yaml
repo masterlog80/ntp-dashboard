@@ -15,6 +15,10 @@ services:
       # - DASHBOARD_AUTH_PASSWORD=change-me
       # Optional SSH known_hosts file for strict host-key verification.
       # - SSH_KNOWN_HOSTS=/app/data/known_hosts
+      # Optional remote GPSD endpoint for local-mode GPS monitoring.
+      # Defaults to 127.0.0.1:2947 when omitted.
+      # - GPSD_HOST=192.168.10.8
+      # - GPSD_PORT=2947
       # Enable the built-in GPSD only when INSTALL_GPSD_CLIENTS=true and a
       # GPS device is mapped into this container.
       # - ENABLE_GPSD=true
