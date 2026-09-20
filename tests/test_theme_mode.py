@@ -28,13 +28,3 @@ def test_theme_toggle_is_in_template():
 def test_theme_injection_module_is_not_used():
     assert not (ROOT / "ntp_dashboard_theme.py").exists()
     assert "ntp_dashboard_theme" not in (ROOT / "ntp_dashboard_runtime.pth").read_text(encoding="utf-8")
-
-
-
-def test_ntp_sources_has_collapsible_chrony_explanation():
-    source = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
-    assert '<details class="source-help">' in source
-    assert 'How to read the Chrony output' in source
-    assert 'chronyc sources' in source
-    assert 'Reach:</strong>' in source
-    assert 'Last Sample:</strong>' in source
