@@ -1,4 +1,4 @@
-import os, json, subprocess, tempfile, logging
+import os, json, subprocess, tempfile, logging, shlex
 from functools import wraps
 from flask import Flask, render_template, jsonify, request, send_from_directory, Response
 import paramiko
@@ -315,7 +315,10 @@ def get_ntp():
 def get_gps():
     config = load_config()
     # Keep sample collection long enough to gather TPV/SKY reliably on slower receivers.
-    cmd = ["timeout 8 gpspipe -w -n 8"]
+    gpsd_host = os.environ.get("GPSD_HOST", "127.0.0.1").strip()
+    gpsd_port = os.environ.get("GPSD_PORT", "2947").strip()
+    gpsd_endpoint = f"{gpsd_host}:{gpsd_port}"
+    cmd = [f"timeout 8 gpspipe -w -n 8 {shlex.quote(gpsd_endpoint)}"]
     
     if config.get("mode") == "local":
         gps_out = run_commands_local(cmd, timeout_seconds=10)[0]
