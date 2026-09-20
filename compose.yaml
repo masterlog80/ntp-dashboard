@@ -5,9 +5,10 @@ services:
     build:
       context: .
       args:
-        INSTALL_GPSD_CLIENTS: "false" # Set to true when local GPS monitoring is required.
+        INSTALL_GPSD_CLIENTS: "true" # Required for local GPS monitoring.
     container_name: ntp-dashboard
-    network_mode: "host" # Required for local Chrony access.
+    networks:
+      - gpsd_bridge
     environment:
       - LOG_LEVEL=INFO
       # Set both variables to enable HTTP Basic Authentication.
@@ -15,19 +16,21 @@ services:
       # - DASHBOARD_AUTH_PASSWORD=change-me
       # Optional SSH known_hosts file for strict host-key verification.
       # - SSH_KNOWN_HOSTS=/app/data/known_hosts
-      # Optional remote GPSD endpoint for local-mode GPS monitoring.
-      # Defaults to 127.0.0.1:2947 when omitted.
-      # - GPSD_HOST=192.168.10.8
-      # - GPSD_PORT=2947
-      # Enable the built-in GPSD only when INSTALL_GPSD_CLIENTS=true and a
-      # GPS device is mapped into this container.
-      # - ENABLE_GPSD=true
-      # - GPS_DEVICE=/dev/ttyACM0
-      # - GPSD_SOCKET=/var/run/gpsd.sock
+      # chronyd-gps is reachable through Docker's internal DNS on gpsd_bridge.
+      - GPSD_HOST=chronyd-gps
+      - GPSD_PORT=2947
     volumes:
       - ./data:/app/data # Persists UI settings
-      - /run/chrony:/run/chrony # Expected host chrony path; /var/run/chrony is typically a symlink to /run/chrony
+      - chrony-run:/run/chrony # Shared with chronyd-gps for local chronyc access
       # Optional: allows the dashboard to detect its exact Docker image reference.
       # Remove this if Docker socket access is not desired; the footer will show ntp-dashboard:unknown.
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
+
+networks:
+  gpsd_bridge:
+    external: true
+
+volumes:
+  chrony-run:
+    external: true
