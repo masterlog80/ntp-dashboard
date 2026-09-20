@@ -50,7 +50,19 @@
         * { box-sizing:border-box; }
         html, body { margin:0; min-height:100%; }
         body { background:var(--ui-bg); color:var(--ui-text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; }
-        .app-header { position:sticky; top:0; z-index:40; background:rgba(28,36,49,.96); border-bottom:1px solid var(--ui-border); backdrop-filter:blur(12px); }
+        .app-header { position:sticky; top:0; z-index:40; background:rgba(13,17,23,.92); border-bottom:1px solid var(--ui-border); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+        html[data-color-mode="light"] .app-header { background:rgba(255,255,255,.92); }
+        .app-header-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-top:9px !important; padding-bottom:9px !important; }
+        .app-brand { display:flex; align-items:center; gap:10px; min-width:0; }
+        .app-brand-icon { width:36px; height:36px; border-radius:8px; background:var(--ui-bg2); border:1px solid var(--ui-border); display:flex; align-items:center; justify-content:center; flex:0 0 auto; overflow:hidden; }
+        .app-brand-icon img { width:28px; height:28px; display:block; }
+        .app-brand-copy { min-width:0; }
+        .app-brand-title { font-size:16px; font-weight:700; line-height:1.2; color:var(--ui-text); }
+        .app-brand-sub { font-size:10px; line-height:1.2; margin-top:2px; color:var(--ui-muted); }
+        .app-header-controls { margin-left:auto; display:flex; align-items:center; gap:7px; }
+        .icon-btn { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:1px solid var(--ui-border); border-radius:7px; background:var(--ui-bg2); color:var(--ui-text); font-size:16px; line-height:1; cursor:pointer; transition:.15s; }
+        .icon-btn:hover { border-color:#58a6ff; background:var(--ui-card); }
+        .icon-btn:focus-visible { outline:none; border-color:#58a6ff; box-shadow:0 0 0 2px rgba(88,166,255,.15); }
         .app-container { max-width:1400px; margin:0 auto; padding:16px; }
         .card { background:var(--ui-card); border:1px solid var(--ui-border); border-radius:10px; padding:18px; }
         .card-title { font-size:14px; font-weight:600; color:var(--ui-text); }
@@ -72,21 +84,17 @@
         .btn-primary:hover { background:rgb(var(--primary-600)); border-color:rgb(var(--primary-600)); }
         .control { width:100%; background:var(--ui-bg2); border:1px solid var(--ui-border); color:var(--ui-text); border-radius:6px; padding:8px 10px; font-size:13px; }
         .control:focus { outline:none; border-color:#58a6ff; box-shadow:0 0 0 2px rgba(88,166,255,.15); }
-        .theme-button { background:var(--ui-bg2); border:1px solid var(--ui-border); color:var(--ui-text); border-radius:6px; padding:7px 11px; }
-        .theme-button[aria-pressed="true"] { border-color:#58a6ff; box-shadow:inset 0 0 0 1px #58a6ff,0 0 0 1px rgba(88,166,255,.15); }
         .metric-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px; }
         .metric-span { grid-column:span 4; }
         .wide-span { grid-column:span 6; }
-        @media(max-width:900px){ .metric-span,.wide-span{grid-column:span 12;} .app-container{padding:12px;} }
+        @media(max-width:900px){ .metric-span,.wide-span{grid-column:span 12;} .app-container{padding:12px;} .app-header-inner{padding-top:8px !important;padding-bottom:8px !important;} }
+        @media(max-width:520px){ .app-brand-sub{display:none;} .app-brand-title{font-size:15px;} .app-header-controls .btn-primary{padding:6px 9px;font-size:12px;} }
         .sky-wrap { background:var(--ui-bg2); border:1px solid var(--ui-border); border-radius:8px; min-height:270px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
         .sky-wrap svg { width:min(100%,300px); height:auto; }
         .divider { height:1px; background:var(--ui-border); }
         .modal-backdrop { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; padding:16px; }
         .modal { width:100%; max-width:620px; max-height:90vh; overflow:auto; background:var(--ui-card); border:1px solid var(--ui-border); border-radius:10px; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
         .hidden { display:none !important; }
-        .theme-menu { position:absolute; right:0; top:calc(100% + 6px); width:220px; max-height:340px; overflow:auto; background:var(--ui-card); border:1px solid var(--ui-border); border-radius:8px; box-shadow:0 16px 40px rgba(0,0,0,.4); padding:6px; z-index:80; }
-        .theme-menu button { width:100%; border:0; background:transparent; color:var(--ui-text); padding:8px 10px; text-align:left; border-radius:5px; cursor:pointer; }
-        .theme-menu button:hover { background:var(--ui-bg2); }
         .app-footer { display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--ui-border); margin-top:24px; padding:14px 2px; color:var(--ui-muted); font-size:11px; }
         .footer-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
         .footer-image { color:var(--ui-text); }
@@ -97,19 +105,17 @@
 </head>
 <body>
     <header class="app-header">
-        <div class="app-container" style="padding-top:11px;padding-bottom:11px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-                    <div style="font-size:26px;line-height:1;">⏱</div>
-                    <div style="min-width:0;"><div style="font-size:18px;font-weight:700;color:#58a6ff;">NTP Dashboard</div><div class="muted" style="font-size:11px;">NTP / Chrony / GPS status</div></div>
+        <div class="app-container app-header-inner">
+            <div class="app-brand">
+                <div class="app-brand-icon"><img src="/static/favicon.svg" alt="" width="30" height="30"></div>
+                <div class="app-brand-copy">
+                    <div class="app-brand-title">NTP Dashboard</div>
+                    <div class="app-brand-sub">NTP / Chrony / GPS status</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                    <div style="display:flex;gap:2px;background:var(--ui-bg2);border:1px solid var(--ui-border);border-radius:7px;padding:2px;">
-                        <button id="btn-light" onclick="setThemeMode('light')" class="theme-button" title="Light mode">☀</button><button id="btn-system" onclick="setThemeMode('system')" class="theme-button" title="System theme">▣</button><button id="btn-dark" onclick="setThemeMode('dark')" class="theme-button" title="Dark mode">☾</button>
-                    </div>
-                    <div style="position:relative;" id="themeDropdownWrapper"><button onclick="toggleThemeMenu(event)" class="btn">Theme ▾</button><div id="themeMenu" class="theme-menu hidden"></div></div>
-                    <button onclick="openSettings()" class="btn btn-primary">Connection Setup</button>
-                </div>
+            </div>
+            <div class="app-header-controls">
+                <button id="btnTheme" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">☾</button>
+                <button onclick="openSettings()" class="btn btn-primary">Connection Setup</button>
             </div>
         </div>
     </header>
