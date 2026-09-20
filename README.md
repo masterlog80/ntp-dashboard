@@ -113,7 +113,9 @@ The dashboard supports two connection modes, selected from **Connection Setup** 
 
 Local mode is intended for running the dashboard on the same host as Chrony.
 
-The Compose deployment uses host networking and mounts `/run/chrony`:
+**Host networking is not required.** The dashboard can use a normal user-defined Docker bridge network. When Chrony runs in another container, share the Chrony runtime volume and use the Chrony container's Unix socket locally inside the dashboard container.
+
+For the `chrony-gps` deployment described below, the dashboard also joins the shared `gpsd_bridge` network so it can reach GPSD at `chronyd-gps:2947`:
 
 ```yaml
 services:
@@ -121,20 +123,38 @@ services:
     build:
       context: .
       args:
-        INSTALL_GPSD_CLIENTS: "false"
+        INSTALL_GPSD_CLIENTS: "true"
     container_name: ntp-dashboard
-    network_mode: "host"
+    networks:
+      - gpsd_bridge
     environment:
       - LOG_LEVEL=INFO
+      - GPSD_HOST=chronyd-gps
+      - GPSD_PORT=2947
     volumes:
       - ./data:/app/data
-      - /run/chrony:/run/chrony
+      - chrony-run:/run/chrony
       # Optional: detect the exact Docker image reference shown in the footer.
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
+
+networks:
+  gpsd_bridge:
+    external: true
+
+volumes:
+  chrony-run:
+    external: true
 ```
 
-`network_mode: "host"` is intentional for local deployments. It allows the container to communicate with Chrony on the host and makes the dashboard listen directly on host port `55234`.
+If Chrony is installed directly on the Docker host rather than in a container, bind-mount the host's `/run/chrony` instead:
+
+```yaml
+volumes:
+  - /run/chrony:/run/chrony
+```
+
+The dashboard still listens on port `55234`. With bridge networking, publish that port explicitly if it must be reachable from outside the Docker network.
 
 ### Remote deployment
 
@@ -251,7 +271,7 @@ Enable **Monitor** in the connection configuration before requesting these metri
 
 ## Docker Compose
 
-The supplied `compose.yaml` is suitable for a local NTP-host deployment:
+The supplied `compose.yaml` shows the containerized `chrony-gps` deployment. It intentionally does **not** use `network_mode: host`:
 
 ```yaml
 services:
@@ -259,18 +279,39 @@ services:
     build:
       context: .
       args:
-        INSTALL_GPSD_CLIENTS: "false"
+        INSTALL_GPSD_CLIENTS: "true"
     container_name: ntp-dashboard
-    network_mode: "host"
+    networks:
+      - gpsd_bridge
     environment:
       - LOG_LEVEL=INFO
+      - GPSD_HOST=chronyd-gps
+      - GPSD_PORT=2947
     volumes:
       - ./data:/app/data
-      - /run/chrony:/run/chrony
+      - chrony-run:/run/chrony
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
+
+networks:
+  gpsd_bridge:
+    external: true
+
+volumes:
+  chrony-run:
+    external: true
 ```
 
-The application listens on **port `55234`**.
+The `gpsd_bridge` network must already exist and must also be attached to `chronyd-gps`. The `chrony-run` volume must be the same volume used by `chronyd-gps`.
+
+For a host-installed Chrony instead of containerized `chronyd-gps`, replace the named volume with:
+
+```yaml
+volumes:
+  - /run/chrony:/run/chrony
+```
+
+The application listens on **port `55234`**. Because bridge networking is used, publish `55234:55234` when the dashboard must be reached from outside Docker.
 
 ### Container health check
 
@@ -333,7 +374,7 @@ The encryption key is generated automatically on first use and is stored beside 
 - **SSH host keys:** Remote connections use strict host-key verification. Mount a trusted `known_hosts` file (default: `/app/data/known_hosts`, configurable with `SSH_KNOWN_HOSTS`) before using Remote mode. Unknown hosts are rejected rather than automatically trusted.
 - **Remote command privileges:** Remote commands are executed using the configured SSH account. The connected account must have sufficient permissions to run the required Chrony/GPS commands. The Clients query may require Chrony command authorisation or `sudo` depending on the target configuration.
 - **Debug mode:** Do not enable `DEBUG_MODE=true` on an exposed production deployment. Debug mode can expose detailed errors and tracebacks.
-- **Host networking:** Local mode uses `network_mode: host`, which gives the container direct access to the host network namespace. This is required by the current local Chrony design.
+- **Container networking:** Local mode does not require `network_mode: host`. Prefer a user-defined bridge network for containerized Chrony/GPSD services and use Docker service-name DNS for inter-container connections. Host networking is only needed when a deployment has a separate, explicit requirement for direct host-network access.
 
 ---
 
@@ -393,7 +434,14 @@ docker compose build --build-arg INSTALL_GPSD_CLIENTS=true
 docker compose up -d
 ```
 
-Also confirm that the GPS receiver is available to the host and that `gpsd` is providing data.
+For containerized GPSD, verify the configured endpoint from inside the dashboard container:
+
+```bash
+docker exec ntp-dashboard getent hosts chronyd-gps
+docker exec ntp-dashboard nc -vz chronyd-gps 2947
+```
+
+Then confirm that `gpsd` is providing data. Do not run a second host gpsd against the same USB receiver.
 
 ### Remote connection fails
 
