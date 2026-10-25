@@ -534,6 +534,16 @@ The repository's GitHub Actions workflow builds the image, reports its uncompres
 
 ---
 
+## Disclaimer
+
+This project is intended for monitoring and homelab use. It executes system commands and, in Remote mode, commands over SSH. Review the deployment, SSH permissions, network exposure, and stored credentials before using it on a production or untrusted network.
+
+---
+
+---
+
+---
+
 ## Versioning
 
 The application detects the exact image reference from the runtime environment. Docker deployments use the Docker Engine API when its socket is mounted; K3s/Kubernetes deployments query the current Pod through a namespace-scoped ServiceAccount. `IMAGE_REF` can be supplied as an explicit fallback when neither runtime API is available.
@@ -546,16 +556,6 @@ git push origin v1.0.0
 ```
 
 The footer therefore follows the image actually running, for example `zot.salvetti.info/ntp-dashboard:0.2.1`, without changing the Dockerfile for each release.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
-## Disclaimer
-
-This project is intended for monitoring and homelab use. It executes system commands and, in Remote mode, commands over SSH. Review the deployment, SSH permissions, network exposure, and stored credentials before using it on a production or untrusted network.
 
 ---
 
@@ -578,3 +578,9 @@ This project is intended for monitoring and homelab use. It executes system comm
 ### Connected NTP Clients
 
 ---
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
