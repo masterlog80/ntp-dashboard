@@ -618,3 +618,40 @@ MIT License. See [`LICENSE`](./LICENSE).
 ## Disclaimer
 
 This project is intended for monitoring and homelab use. It executes system commands and, in Remote mode, commands over SSH. Review the deployment, SSH permissions, network exposure, and stored credentials before using it on a production or untrusted network.
+
+---
+
+## Build on macOS (Docker Desktop)
+
+These instructions build and push a **multi-platform** image from a Mac, so the registry can serve the correct image to both `linux/amd64` and `linux/arm64` hosts. Docker Desktop must be running, and the Mac must be able to reach `zot.salvetti.info`.
+
+Clone this repository and enter its directory first. Before building, perform any repository-specific preparation described in the Linux **Clone & build** instructions (for example, required configuration-file copies). Do not put credentials or private configuration into the image.
+
+```bash
+# Create or reuse a Buildx builder
+docker buildx inspect mac-multiplatform >/dev/null 2>&1 || \
+  docker buildx create --name mac-multiplatform --driver docker-container
+docker buildx use mac-multiplatform
+docker buildx inspect --bootstrap
+
+# Read the version from the Dockerfile's OCI version label
+VERSION="$(sed -nE 's/.*org.opencontainers.image.version="([^"]+)".*/\1/p' Dockerfile | head -n 1)"
+if [ -z "$VERSION" ]; then
+  echo "Could not read org.opencontainers.image.version from Dockerfile"
+  exit 1
+fi
+
+# Build both architectures and push versioned + latest tags
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --tag zot.salvetti.info/ntp-dashboard:"$VERSION" \
+  --tag zot.salvetti.info/ntp-dashboard:latest \
+  --push \
+  .
+
+# Verify the published manifest
+docker buildx imagetools inspect zot.salvetti.info/ntp-dashboard:"$VERSION"
+```
+
+The manifest should list both `linux/amd64` and `linux/arm64`. The `unknown/unknown` entries, if present, are BuildKit attestation manifests and are expected. This Mac workflow builds and pushes only; it does not deploy the application. Update the deployment through its normal mechanism (for example, FluxCD) after verifying the image.
+
