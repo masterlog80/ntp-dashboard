@@ -130,11 +130,6 @@ http://<docker-host>:55234
 
 For a protected deployment, set `DASHBOARD_AUTH_USER` and `DASHBOARD_AUTH_PASSWORD` in the container environment. Both must be set together.
 
-### Uninstall
-
-```bash
-docker compose down
-
 # Also remove the persisted dashboard configuration:
 docker compose down -v
 rm -rf ./data
@@ -244,24 +239,6 @@ and parses `TPV` and `SKY` messages for GPS time and satellite information.
 For Remote mode, GPS commands are executed on the configured SSH target, so the remote NTP server must provide the required GPS tooling itself.
 
 > **Note:** A GPS receiver is not required for ordinary Chrony/NTP monitoring. GPS support is only needed when you want satellite and GPS-time information.
-
----
-
-## Screenshots
-
-### Dashboard
-![NTP Dashboard](https://github.com/user-attachments/assets/8c26db82-3838-4c46-8c5a-135d765cc5ae)
-
-### Connection Setup
-![Connection Setup](https://github.com/user-attachments/assets/f33ea67f-cda3-49bb-850a-0d03c18ec7d4)
-
-### SSH Key Authentication
-![SSH Key Authentication](https://github.com/user-attachments/assets/7bd6cc08-7990-436a-374f-9e4cfba7dd2f)
-
-### Theme Customization
-![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
-
-### Connected NTP Clients
 
 ---
 
@@ -579,5 +556,25 @@ This project is licensed under the [MIT License](LICENSE).
 ## Disclaimer
 
 This project is intended for monitoring and homelab use. It executes system commands and, in Remote mode, commands over SSH. Review the deployment, SSH permissions, network exposure, and stored credentials before using it on a production or untrusted network.
+
+---
+
+---
+
+## Screenshots
+
+### Dashboard
+![NTP Dashboard](https://github.com/user-attachments/assets/8c26db82-3838-4c46-8c5a-135d765cc5ae)
+
+### Connection Setup
+![Connection Setup](https://github.com/user-attachments/assets/f33ea67f-cda3-49bb-850a-0d03c18ec7d4)
+
+### SSH Key Authentication
+![SSH Key Authentication](https://github.com/user-attachments/assets/7bd6cc08-7990-436a-374f-9e4cfba7dd2f)
+
+### Theme Customization
+![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
+
+### Connected NTP Clients
 
 ---
