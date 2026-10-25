@@ -254,7 +254,6 @@ For Remote mode, GPS commands are executed on the configured SSH target, so the 
 ![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
 
 ### Connected NTP Clients
-![Connected NTP clients](https://github.com/user-attachments/assets/a870b1c2-ef97-4355-b312-be2144e512a6)
 
 ---
 
@@ -302,62 +301,6 @@ The optional system monitor can report:
 - CPU/system temperature where the host exposes `/sys/class/thermal/thermal_zone0/temp`
 
 Enable **Monitor** in the connection configuration before requesting these metrics.
-
----
-
-## Docker Compose
-
-The supplied `compose.yaml` shows the containerized `chrony-gps` deployment. It intentionally does **not** use `network_mode: host`:
-
-```yaml
-services:
-  ntp-dashboard:
-    build:
-      context: .
-      args:
-        INSTALL_GPSD_CLIENTS: "true"
-    container_name: ntp-dashboard
-    networks:
-      - gpsd_bridge
-    environment:
-      - LOG_LEVEL=INFO
-      - GPSD_HOST=chronyd-gps
-      - GPSD_PORT=2947
-    volumes:
-      - ./data:/app/data
-      - chrony-run:/run/chrony
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: unless-stopped
-
-networks:
-  gpsd_bridge:
-    external: true
-
-volumes:
-  chrony-run:
-    external: true
-```
-
-The `gpsd_bridge` network must already exist and must also be attached to `chronyd-gps`. The `chrony-run` volume must be the same volume used by `chronyd-gps`.
-
-For a host-installed Chrony instead of containerized `chronyd-gps`, replace the named volume with:
-
-```yaml
-volumes:
-  - /run/chrony:/run/chrony
-```
-
-The application listens on **port `55234`**. Because bridge networking is used, publish `55234:55234` when the dashboard must be reached from outside Docker.
-
-### Container health check
-
-The image includes a Docker health check against the unauthenticated `/healthz` endpoint:
-
-```text
-http://127.0.0.1:55234/healthz
-```
-
-The check runs every 30 seconds, with a 10-second startup grace period and three retries.
 
 ---
 
@@ -570,30 +513,6 @@ The Flask application executes a small set of operating-system commands either l
 
 ---
 
-## Project Structure
-
-```text
-.
-├── app.py                         # Flask application and API
-├── compose.yaml                   # Docker Compose deployment
-├── Dockerfile                     # Multi-stage Alpine image build
-├── requirements.txt               # Python dependencies
-├── templates/
-│   ├── config.json                # Template placeholder
-│   └── index.html                 # Dashboard UI
-├── static/
-│   ├── dashboard.js               # Dashboard frontend logic
-│   ├── manifest.json              # PWA manifest
-│   ├── sw.js                      # Service worker
-│   └── images/
-│       └── ntp-dashboard-logo.png
-├── tests/
-│   └── test_app.py                # Application tests
-└── README.md
-```
-
----
-
 ## Development
 
 Create a Python virtual environment and install the application dependencies:
@@ -647,9 +566,7 @@ The footer therefore follows the image actually running, for example `zot.salvet
 
 ## License
 
-MIT License. See [`LICENSE`](./LICENSE).
-
----
+This project is licensed under the [MIT License](LICENSE).
 
 ## Disclaimer
 
