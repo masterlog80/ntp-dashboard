@@ -74,6 +74,14 @@ These instructions build and push a **multi-platform** image from a Mac, so the 
 Clone this repository and enter its directory first. Before building, perform any repository-specific preparation described in the Linux **Clone & build** instructions (for example, required configuration-file copies). Do not put credentials or private configuration into the image.
 
 ```bash
+export REPO="masterlog80/ntp-dashboard"
+export DIRNAME="ntp-dashboard"
+export REGISTRY="zot.salvetti.info"
+export IMAGE_NAME="ntp-dashboard"
+
+git clone "https://github.com/${REPO}.git" "$DIRNAME"
+cd "$DIRNAME"
+
 # Create or reuse a Buildx builder
 docker buildx inspect mac-multiplatform >/dev/null 2>&1 || \
   docker buildx create --name mac-multiplatform --driver docker-container
@@ -90,13 +98,13 @@ fi
 # Build both architectures and push versioned + latest tags
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  --tag zot.salvetti.info/ntp-dashboard:"$VERSION" \
-  --tag zot.salvetti.info/ntp-dashboard:latest \
+  --tag $REGISTRY/$IMAGE_NAME:"$VERSION" \
+  --tag $REGISTRY/$IMAGE_NAME:latest \
   --push \
   .
 
 # Verify the published manifest
-docker buildx imagetools inspect zot.salvetti.info/ntp-dashboard:"$VERSION"
+docker buildx imagetools inspect $REGISTRY/$IMAGE_NAME:"$VERSION"
 ```
 
 The manifest should list both `linux/amd64` and `linux/arm64`. The `unknown/unknown` entries, if present, are BuildKit attestation manifests and are expected. This Mac workflow builds and pushes only; it does not deploy the application. Update the deployment through its normal mechanism (for example, FluxCD) after verifying the image.
