@@ -46,7 +46,7 @@ sudo apt update
 sudo apt install chrony
 ```
 
-### Clone & build
+### Clone & build (Linux)
 
 This repo's build/deploy logic uses the shared [`masterlog80/homelab-scripts`](https://github.com/masterlog80/homelab-scripts) workflow used by the other projects in this collection. Set the variables below and run it:
 
@@ -66,6 +66,50 @@ bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubus
 ```
 
 The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment. The dashboard detects its exact runtime image reference automatically: Docker uses the Docker Engine API when `/var/run/docker.sock` is mounted, while K3s/Kubernetes uses the Pod API with a namespace-scoped `get` permission. No image version is hardcoded into the image.
+
+### Clone & build (Mac)
+
+These instructions build and push a **multi-platform** image from a Mac, so the registry can serve the correct image to both `linux/amd64` and `linux/arm64` hosts. Docker Desktop must be running, and the Mac must be able to reach `zot.salvetti.info`.
+
+Clone this repository and enter its directory first. Before building, perform any repository-specific preparation described in the Linux **Clone & build** instructions (for example, required configuration-file copies). Do not put credentials or private configuration into the image.
+
+```bash
+export REPO="masterlog80/ntp-dashboard"
+export DIRNAME="ntp-dashboard"
+export REGISTRY="zot.salvetti.info"
+export IMAGE_NAME="ntp-dashboard"
+
+git clone "https://github.com/${REPO}.git" "$DIRNAME"
+cd "$DIRNAME"
+
+# Create or reuse a Buildx builder
+docker buildx inspect mac-multiplatform >/dev/null 2>&1 || \
+  docker buildx create --name mac-multiplatform --driver docker-container
+docker buildx use mac-multiplatform
+docker buildx inspect --bootstrap
+
+# Read the version from the Dockerfile's OCI version label
+VERSION="$(sed -nE 's/.*org.opencontainers.image.version="([^"]+)".*/\1/p' Dockerfile | head -n 1)"
+if [ -z "$VERSION" ]; then
+  echo "Could not read org.opencontainers.image.version from Dockerfile"
+  exit 1
+fi
+
+# Build both architectures and push versioned + latest tags
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --tag $REGISTRY/$IMAGE_NAME:"$VERSION" \
+  --tag $REGISTRY/$IMAGE_NAME:latest \
+  --push \
+  .
+
+# Verify the published manifest
+docker buildx imagetools inspect $REGISTRY/$IMAGE_NAME:"$VERSION"
+```
+
+The manifest should list both `linux/amd64` and `linux/arm64`. The `unknown/unknown` entries, if present, are BuildKit attestation manifests and are expected. This Mac workflow builds and pushes only; it does not deploy the application. Update the deployment through its normal mechanism (for example, FluxCD) after verifying the image.
+
+---
 
 ### Run manually
 
@@ -218,7 +262,6 @@ For Remote mode, GPS commands are executed on the configured SSH target, so the 
 ![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
 
 ### Connected NTP Clients
-![Connected NTP clients](https://github.com/user-attachments/assets/a870b1c2-ef97-4355-b312-be2144e512a6)
 
 ---
 
@@ -266,62 +309,6 @@ The optional system monitor can report:
 - CPU/system temperature where the host exposes `/sys/class/thermal/thermal_zone0/temp`
 
 Enable **Monitor** in the connection configuration before requesting these metrics.
-
----
-
-## Docker Compose
-
-The supplied `compose.yaml` shows the containerized `chrony-gps` deployment. It intentionally does **not** use `network_mode: host`:
-
-```yaml
-services:
-  ntp-dashboard:
-    build:
-      context: .
-      args:
-        INSTALL_GPSD_CLIENTS: "true"
-    container_name: ntp-dashboard
-    networks:
-      - gpsd_bridge
-    environment:
-      - LOG_LEVEL=INFO
-      - GPSD_HOST=chronyd-gps
-      - GPSD_PORT=2947
-    volumes:
-      - ./data:/app/data
-      - chrony-run:/run/chrony
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: unless-stopped
-
-networks:
-  gpsd_bridge:
-    external: true
-
-volumes:
-  chrony-run:
-    external: true
-```
-
-The `gpsd_bridge` network must already exist and must also be attached to `chronyd-gps`. The `chrony-run` volume must be the same volume used by `chronyd-gps`.
-
-For a host-installed Chrony instead of containerized `chronyd-gps`, replace the named volume with:
-
-```yaml
-volumes:
-  - /run/chrony:/run/chrony
-```
-
-The application listens on **port `55234`**. Because bridge networking is used, publish `55234:55234` when the dashboard must be reached from outside Docker.
-
-### Container health check
-
-The image includes a Docker health check against the unauthenticated `/healthz` endpoint:
-
-```text
-http://127.0.0.1:55234/healthz
-```
-
-The check runs every 30 seconds, with a 10-second startup grace period and three retries.
 
 ---
 
@@ -534,30 +521,6 @@ The Flask application executes a small set of operating-system commands either l
 
 ---
 
-## Project Structure
-
-```text
-.
-├── app.py                         # Flask application and API
-├── compose.yaml                   # Docker Compose deployment
-├── Dockerfile                     # Multi-stage Alpine image build
-├── requirements.txt               # Python dependencies
-├── templates/
-│   ├── config.json                # Template placeholder
-│   └── index.html                 # Dashboard UI
-├── static/
-│   ├── dashboard.js               # Dashboard frontend logic
-│   ├── manifest.json              # PWA manifest
-│   ├── sw.js                      # Service worker
-│   └── images/
-│       └── ntp-dashboard-logo.png
-├── tests/
-│   └── test_app.py                # Application tests
-└── README.md
-```
-
----
-
 ## Development
 
 Create a Python virtual environment and install the application dependencies:
@@ -611,10 +574,10 @@ The footer therefore follows the image actually running, for example `zot.salvet
 
 ## License
 
-MIT License. See [`LICENSE`](./LICENSE).
-
----
+This project is licensed under the [MIT License](LICENSE).
 
 ## Disclaimer
 
 This project is intended for monitoring and homelab use. It executes system commands and, in Remote mode, commands over SSH. Review the deployment, SSH permissions, network exposure, and stored credentials before using it on a production or untrusted network.
+
+---
