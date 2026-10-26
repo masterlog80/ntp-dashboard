@@ -533,6 +533,8 @@ This project is intended for monitoring and homelab use. It executes system comm
 
 ---
 
+---
+
 ## Versioning
 
 The application detects the exact image reference from the runtime environment. Docker deployments use the Docker Engine API when its socket is mounted; K3s/Kubernetes deployments query the current Pod through a namespace-scoped ServiceAccount. `IMAGE_REF` can be supplied as an explicit fallback when neither runtime API is available.
