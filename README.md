@@ -556,9 +556,6 @@ The footer therefore follows the image actually running, for example `zot.salvet
 ### Connection Setup
 ![Connection Setup](https://github.com/user-attachments/assets/f33ea67f-cda3-49bb-850a-0d03c18ec7d4)
 
-### SSH Key Authentication
-![SSH Key Authentication](https://github.com/user-attachments/assets/7bd6cc08-7990-436a-374f-9e4cfba7dd2f)
-
 ### Theme Customization
 ![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
 
