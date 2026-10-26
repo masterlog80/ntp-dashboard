@@ -130,13 +130,6 @@ http://<docker-host>:55234
 
 For a protected deployment, set `DASHBOARD_AUTH_USER` and `DASHBOARD_AUTH_PASSWORD` in the container environment. Both must be set together.
 
-# Also remove the persisted dashboard configuration:
-docker compose down -v
-rm -rf ./data
-```
-
-> **Important:** The `data/` directory contains the encrypted SSH credentials/private key and the encryption key required to decrypt them. Back it up if you want to preserve the saved connection configuration.
-
 ---
 
 ## Deployment Modes
@@ -540,10 +533,6 @@ This project is intended for monitoring and homelab use. It executes system comm
 
 ---
 
----
-
----
-
 ## Versioning
 
 The application detects the exact image reference from the runtime environment. Docker deployments use the Docker Engine API when its socket is mounted; K3s/Kubernetes deployments query the current Pod through a namespace-scoped ServiceAccount. `IMAGE_REF` can be supplied as an explicit fallback when neither runtime API is available.
@@ -556,8 +545,6 @@ git push origin v1.0.0
 ```
 
 The footer therefore follows the image actually running, for example `zot.salvetti.info/ntp-dashboard:0.2.1`, without changing the Dockerfile for each release.
-
----
 
 ---
 
@@ -576,8 +563,6 @@ The footer therefore follows the image actually running, for example `zot.salvet
 ![Theme customization](https://github.com/user-attachments/assets/1b2a41b7-d02c-4800-838f-9e4cfba7dd2f)
 
 ### Connected NTP Clients
-
----
 
 ---
 
