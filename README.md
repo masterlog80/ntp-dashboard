@@ -69,47 +69,22 @@ The standard workflow builds the image from the repository and can deploy the su
 
 ### Clone & build (Mac)
 
-These instructions build and push a **multi-platform** image from a Mac, so the registry can serve the correct image to both `linux/amd64` and `linux/arm64` hosts. Docker Desktop must be running, and the Mac must be able to reach `zot.salvetti.info`.
-
-Clone this repository and enter its directory first. Before building, perform any repository-specific preparation described in the Linux **Clone & build** instructions (for example, required configuration-file copies). Do not put credentials or private configuration into the image.
+Runs the same shared workflow as Linux ([`clone-build-mac.sh`](https://github.com/masterlog80/homelab-scripts/blob/main/clone-build-mac.sh)): GitHub token, pending-PR picker, registry version check with next-version prompt, Dockerfile label update and push confirmation. It then builds and pushes a **multi-platform** image (`linux/amd64` + `linux/arm64`) with Buildx. It does not deploy: update the workload through its normal mechanism (for example FluxCD) after the push. Requires Docker Desktop (running) and `zot.salvetti.info` reachable; `jq` (`brew install jq`) is recommended for the PR picker and version check.
 
 ```bash
 export REPO="masterlog80/ntp-dashboard"
 export DIRNAME="ntp-dashboard"
 export REGISTRY="zot.salvetti.info"
 export IMAGE_NAME="ntp-dashboard"
+export COMPOSE_FILE="compose.yaml"
+export OPERATIONS=""
 
-git clone "https://github.com/${REPO}.git" "$DIRNAME"
-cd "$DIRNAME"
+GH_TOKEN="${GH_TOKEN:-$GITHUB_TOKEN}"
+[[ -z "$GH_TOKEN" ]] && read -s -p "GitHub token (required - homelab-scripts is private): " GH_TOKEN && echo
+export GH_TOKEN
 
-# Create or reuse a Buildx builder
-docker buildx inspect mac-multiplatform >/dev/null 2>&1 || \
-  docker buildx create --name mac-multiplatform --driver docker-container
-docker buildx use mac-multiplatform
-docker buildx inspect --bootstrap
-
-# Read the version from the Dockerfile's OCI version label
-VERSION="$(sed -nE 's/.*org.opencontainers.image.version="([^"]+)".*/\1/p' Dockerfile | head -n 1)"
-if [ -z "$VERSION" ]; then
-  echo "Could not read org.opencontainers.image.version from Dockerfile"
-  exit 1
-fi
-
-# Build both architectures and push versioned + latest tags
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --tag $REGISTRY/$IMAGE_NAME:"$VERSION" \
-  --tag $REGISTRY/$IMAGE_NAME:latest \
-  --push \
-  .
-
-# Verify the published manifest
-docker buildx imagetools inspect $REGISTRY/$IMAGE_NAME:"$VERSION"
+bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubusercontent.com/masterlog80/homelab-scripts/main/clone-build-mac.sh)"
 ```
-
-The manifest should list both `linux/amd64` and `linux/arm64`. The `unknown/unknown` entries, if present, are BuildKit attestation manifests and are expected. This Mac workflow builds and pushes only; it does not deploy the application. Update the deployment through its normal mechanism (for example, FluxCD) after verifying the image.
-
----
 
 ### Run manually
 
