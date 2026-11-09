@@ -62,7 +62,7 @@ GH_TOKEN="${GH_TOKEN:-$GITHUB_TOKEN}"
 [[ -z "$GH_TOKEN" ]] && read -s -p "GitHub token (required - homelab-scripts is private): " GH_TOKEN && echo
 export GH_TOKEN
 
-bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubusercontent.com/masterlog80/homelab-scripts/main/clone-build.sh)"
+bash -c "$(curl -fsSL -H "Authorization: token ${GH_TOKEN}" https://raw.githubusercontent.com/masterlog80/homelab-scripts/main/clone-build-linux.sh)"
 ```
 
 The standard workflow builds the image from the repository and can deploy the supplied Compose configuration to the configured Docker host/registry environment. The dashboard detects its exact runtime image reference automatically: Docker uses the Docker Engine API when `/var/run/docker.sock` is mounted, while K3s/Kubernetes uses the Pod API with a namespace-scoped `get` permission. No image version is hardcoded into the image.
